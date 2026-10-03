@@ -75,7 +75,9 @@ def lint(shot_path, card_paths, max_clip_seconds=None):
         add("style", "FAIL", "One shared style line must exactly match the selected cards")
     count = meta.get("subject_count")
     counts = re.findall(r"^主体数：[ \t]*(\d+)[。.]?[ \t]*$", body, re.M)
-    if type(count) is not int or count < len(cards) or counts != [str(count)]:
+    constraint_counts = re.findall(r"画面中恰好\s*(\d+)\s*个角色", "\n".join(re.findall(r"^约束：[ \t]*(.*)$", body, re.M)))
+    count_matches = counts == [str(count)] or (not counts and constraint_counts == [str(count)])
+    if type(count) is not int or count < len(cards) or not count_matches or (constraint_counts and constraint_counts != [str(count)]):
         add("subject_count", "FAIL", "Subject count is inconsistent with text or selected cards")
     refs = meta.get("references")
     if type(meta.get("text_only", False)) is not bool:

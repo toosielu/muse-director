@@ -10,7 +10,7 @@ def check(root):
     root = Path(root)
     required = ["README.md", "SKILL.md", "muse-idea-to-short.md", "agents/openai.yaml",
                 "genres/healing-ip.md", "genres/beauty-oncamera.md", "genres/guofeng-live.md",
-                "examples/one-line-to-30s.md", "examples/prompt-merge.md", "tools/u0_check.py",
+                "examples/one-line-to-30s.md", "examples/prompt-merge.md", "examples/healing-test.md", "tools/u0_check.py",
                 "tools/lint_shot.py", "tools/test-log.csv", "tools/refactor-review.md"]
     errors = ["missing: " + name for name in required if not (root/name).is_file()]
     lengths = {}

@@ -14,6 +14,7 @@
 
 - [一句话→4镜30秒](examples/one-line-to-30s.md)
 - [已有详细提示词：拆镜与原话合并](examples/prompt-merge.md)
+- [治愈定妆实测：三条输入、回传与人工评分](examples/healing-test.md)
 - [治愈IP](genres/healing-ip.md) / [写实人物出镜 · meinv-chujing](genres/beauty-oncamera.md) / [真人古风](genres/guofeng-live.md)
 
 主文件是唯一制作规则；题材只补本题材知识，示例是未投产的教学稿。所有未在本项目Muse实测的默认值均标**待测**，没有真实生成质量、速度或成功率承诺。Muse仍是生成方，研究Seedance/Hell Grind只提取方法，不要求换模型或调用API。

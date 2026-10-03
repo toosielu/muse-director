@@ -18,6 +18,8 @@ python tools/u0_check.py downloaded.mp4 --target-aspect 0.5625 --min-seconds 6 -
 
 使用一个`### 制作任务`与同级`### 模型输入（原样转交）`，管理JSON仅留在制作层。`--card`可重复或不提供；纯文字设`text_only: true`，空参考不绕过已采用卡的必要图片。
 
+人数可仅在约束行写“画面中恰好N个角色”，无需再添主体数行；若两处都有须与制作层人数一致，冲突FAIL。
+
 ````markdown
 ### 制作任务
 ```json
@@ -53,3 +55,5 @@ python tools/check_package.py
 ```
 
 字数按全部Unicode字符计算（含Markdown/空白），比只算中文字更保守；不生成主文件，检查失败直接改唯一主文件。实测表CSV仅有表头，实际投产时记录真实提交/文件/费用或unknown。维护取舍与失败来源见[重构记录](refactor-review.md)。
+
+治愈实测见[完整示例](../examples/healing-test.md)。台账分别保存Muse原始H1–H6、人工H1–H6、观察覆盖、预先采用的H3不适用、人数/文字/动态与跨镜衔接，新增列追加在原表头后。`muse_score_coverage`和`human_score_coverage`分别按H项写观察方式、真实时间窗与证据，旧`score_coverage`仅留综合备注；不能让某方抽帧覆盖冒充另一方连续看听。UNVERIFIED不改为不适用或从分母剔除；表头不代表有实际数据。

@@ -11,6 +11,7 @@ description: 一句话成片：把一句话、简单故事或已有长提示词�
 - 写实人物出镜（`meinv-chujing`）：按需补 [题材包](genres/beauty-oncamera.md)。
 - 真人古风：按需补 [题材包](genres/guofeng-live.md)。
 - 一句话到整片示范：[入口A](examples/one-line-to-30s.md)；已有提示词拆镜示范：[入口B](examples/prompt-merge.md)。
+- 治愈定妆实测：[三条独立输入及评分示例](examples/healing-test.md)，仅在实测任务按需读取。
 
 用户无需安装脚本、填技术表或同时上传所有文件；只加载当前题材与示例。需要本地检查时读 [后台工具说明](tools/README.md)。来源现象、待测对照和冲突取舍是维护记录，见 [重构验收](tools/refactor-review.md)，不作为另一套制作规则。
 
