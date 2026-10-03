@@ -5,14 +5,20 @@ description: 一句话成片：把一句话、简单故事或已有长提示词�
 
 # 一句话成片
 
-先读 [主文件](muse-idea-to-short.md)，它是唯一制作规则；本文件只路由，不复制默认值。用户只给想法走入口A，给详细提示词走入口B；已有采用素材从当前阶段继续。
+先读 [主文件](muse-idea-to-short.md)。它是唯一制作规则。本文件只负责指路，不另写一套默认。用户只给想法，走入口 A。用户给了详细提示词，走入口 B。已经有用过的素材，就从当前这一步继续。
 
-- 治愈IP：按需补 [题材包](genres/healing-ip.md)。
-- 写实人物出镜（`meinv-chujing`）：按需补 [题材包](genres/beauty-oncamera.md)。
-- 真人古风：按需补 [题材包](genres/guofeng-live.md)。
-- 一句话到整片示范：[入口A](examples/one-line-to-30s.md)；已有提示词拆镜示范：[入口B](examples/prompt-merge.md)。
-- 治愈定妆实测：[三条独立输入及评分示例](examples/healing-test.md)，仅在实测任务按需读取。
+请求对上某一类时，写分镜之前先读对应题材包：
 
-用户无需安装脚本、填技术表或同时上传所有文件；只加载当前题材与示例。需要本地检查时读 [后台工具说明](tools/README.md)。来源现象、待测对照和冲突取舍是维护记录，见 [重构验收](tools/refactor-review.md)，不作为另一套制作规则。
+- 治愈小角色、慢节奏原创 IP：[治愈包](genres/healing-ip.md)。
+- 写实人物出镜（`meinv-chujing`）：[出镜包](genres/beauty-oncamera.md)。
+- 真人古风：[古风包](genres/guofeng-live.md)。
 
-接入能力和权限以实际宿主为准；Codex是可选助手，Muse仍负责生成。新文件读取不等于原生Skill安装或视频制作已经发生。
+对不上这三类，就只用主文件，不要硬套题材包。
+
+- 一句话到整片怎么写：[入口 A](examples/one-line-to-30s.md)。已经有长提示词怎么拆：[入口 B](examples/prompt-merge.md)。
+- 治愈定妆的三条独立输入：[实测示例](examples/healing-test.md)。只有用户说是实测时才读。
+- 2026-10-03 一次 45 秒治愈成片的翻车记录：[案例](examples/case-2026-10-03-healing-45s.md)。做多镜头角色片时读，避免再跳过定妆、交方图、换景和把结尾拉远。
+
+用户不用安装脚本，也不用一次上传所有文件。只读主文件、对上的那一个题材包，以及当前用得上的示例。要在本地量视频或检查提示词，读 [后台工具说明](tools/README.md)。为什么这样取舍，见 [重构记录](tools/refactor-review.md)，那不是另一套制作规则。
+
+助手用什么接入都可以。Muse 负责生成。读了这些文件，不等于已经生成了视频。

@@ -45,6 +45,11 @@ class PackageTests(unittest.TestCase):
             self.assertTrue(all(prefix+str(i) in header for i in range(1,7)))
         self.assertTrue({"h3_na_adoption","score_coverage","muse_score_coverage","human_score_coverage","continuity_status"}.issubset(header))
 
+    def test_real_run_case_records_the_observed_failures(self):
+        text=(Path(__file__).resolve().parents[2]/"examples/case-2026-10-03-healing-45s.md").read_text(encoding="utf-8")
+        for phrase in ("45", "960", "定妆", "萤火虫", "室内", "星星", "自主成片", "待用户量", "过渡"):
+            self.assertIn(phrase, text)
+
     def test_canonical_structure_and_links(self):
         report=check(Path(__file__).resolve().parents[2])
         self.assertEqual(report["status"],"PASS",report["errors"])

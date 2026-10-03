@@ -9,6 +9,34 @@ import sys
 INPUT_HEADING = "### 模型输入（原样转交）"
 
 
+BEAT_SPLIT = re.compile(r"然后|接着|随后|，再|并且|；|;")
+HOLD_LINE = re.compile(r"保持|静止|不动")
+END_POSE = re.compile(r"停在|停下|松手|回到|退回")
+TIMED_LINE = re.compile(r"^(\d+(?:\.\d+)?)\s*[-–—~～]\s*(\d+(?:\.\d+)?)\s*秒[：:]\s*(\S.*?)$", re.M)
+
+
+def action_beats(text):
+    return len([part for part in BEAT_SPLIT.split(text) if part.strip()])
+
+
+def shot_beat_count(body):
+    """Count story beats. Start pose, end pose and hold are not extra beats."""
+    segments = TIMED_LINE.findall(body)
+    if segments:
+        total = 0
+        for index, (_, _, action) in enumerate(segments):
+            beats = action_beats(action)
+            scaffolding = beats <= 1 and (
+                (index == 0 and len(segments) > 1)
+                or HOLD_LINE.search(action)
+                or END_POSE.search(action)
+            )
+            if not scaffolding:
+                total += beats
+        return total
+    return sum(action_beats(item) for item in re.findall(r"^动作：[ \t]*(.*)$", body, re.M))
+
+
 def positive_occurrence(text, pattern):
     """Conservative text heuristic; not a semantic prohibition classifier."""
     for clause in re.split(r"[，,。.;；\n]", text):
@@ -175,6 +203,18 @@ def lint(shot_path, card_paths, max_clip_seconds=None):
             raise ValueError(key + " must be a boolean")
         if setting is False and positive_occurrence(sound, pattern):
             add("sound_policy", "FAIL", key + " contradicts sound input")
+    max_beats = policies.get("max_beats", 2)
+    if max_beats is not None:
+        if type(max_beats) is not int or max_beats < 0:
+            raise ValueError("max_beats must be a nonnegative integer")
+        if shot_beat_count(body) > max_beats:
+            add("beat_limit", "FAIL", "Action beats exceed the adopted per-shot limit")
+    allow_timed_negation = policies.get("allow_timed_negation", False)
+    if type(allow_timed_negation) is not bool:
+        raise ValueError("allow_timed_negation must be a boolean")
+    timed_actions = [action for _, _, action in TIMED_LINE.findall(body)]
+    if not allow_timed_negation and any("不要" in action for action in timed_actions):
+        add("timed_negation", "FAIL", "Rewrite 不要 inside timed lines as the visible action; keep real bans in the constraint line")
     camera_limit = policies.get("max_camera_moves", 1)
     if camera_limit is not None:
         if type(camera_limit) is not int or camera_limit < 0:

@@ -43,9 +43,9 @@ python tools/u0_check.py downloaded.mp4 --target-aspect 0.5625 --min-seconds 6 -
 python tools/lint_shot.py --shot shot.md --max-clip-seconds 10
 ```
 
-默认检查禁字三项、无音乐/对白、单种机位、管理话术、规划容量10秒（待测）。用户已采用不同要求时制作JSON明确写`allow_music/allow_dialogue`、`planning_limit_seconds`和`policies.max_camera_moves/required_literals`；默认不得覆盖用户稿。`mode: detailed`必须提供`frozen_blocks`原文对象（character/style/scene/constraint等按实际有的项），逐字存在检查不保证视觉一致。
+默认检查禁字三项、无音乐/对白、单种机位、管理话术、规划容量10秒（待测）。定时行里的「不要」会判失败：那一行要改成看得见的动作，必要禁令留在约束行。动作节拍默认最多2个，起点姿势、终点姿势和「保持不动」不计拍；超过就失败。用户明确要更多拍时，在制作JSON写`policies.max_beats`。用户已采用不同要求时，还可写`allow_music/allow_dialogue`、`planning_limit_seconds`和`policies.max_camera_moves/required_literals`；默认不得覆盖用户稿。`mode: detailed`必须提供`frozen_blocks`原文对象（character/style/scene/constraint等按实际有的项），逐字存在检查不保证视觉一致。
 
-卡JSON支持`card_id/version/locked_text/style_prefix/constraint_block/reference_images/adoption_evidence`；详细模式也可将用户原话放`frozen_blocks`，不要求伪造不存在的人物。动作可为起点/动作/终点，或连续相对秒段。视觉“不要/禁止”给WARN供对照，不自动删除用户禁令。词法规则仅能发现明显冲突，不理解全部否定/中文同义词，场景、动作、参考上传与平台原文需真实复核。
+卡JSON支持`card_id/version/locked_text/style_prefix/constraint_block/reference_images/adoption_evidence`；详细模式也可将用户原话放`frozen_blocks`，不要求伪造不存在的人物。动作可为起点/动作/终点，或连续相对秒段。画面字段里的“不要/禁止”给WARN供对照，不自动删除用户禁令。定时行里的“不要”是FAIL，见上一节。词法规则仅能发现明显冲突，不理解全部否定和中文同义词。场景、动作、参考图有没有真的传上去，都要另外再看。
 
 ## 维护
 
