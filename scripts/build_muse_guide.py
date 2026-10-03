@@ -9,6 +9,8 @@ import sys
 
 SOURCES = (
     "references/autonomous-delivery.md",
+    "references/execution-modes.md",
+    "references/quality-gates.md",
     "references/production-methods.md",
     "references/shot-design-checks.md",
     "references/genre-profiles.md",
@@ -34,6 +36,8 @@ INTRO = """# Muse 导演助手：自主制作完整动画
 """
 
 GUIDE_ROUTES = {
+    "execution-modes.md": "本指南的‘执行范围、实测与轻量入口’",
+    "quality-gates.md": "本指南的‘规格、短暂事件与实际回传’",
     "shot-handoff.md": "本指南的‘单镜提示词’与‘镜头检查与返修记录’",
     "shot-handoff-template.md": "本指南的‘单镜提示词’与‘镜头检查与返修记录’",
     "workflow.md": "本指南的‘有限质量检查与结束条件’与‘镜头检查与返修记录’",
@@ -91,22 +95,39 @@ def render_guide(root):
     return guide
 
 
+def render_compact(root):
+    name = "references/execution-modes.md"
+    source = (Path(root) / name).read_bytes()
+    text = source.decode("utf-8-sig")
+    heading = "## 标准委托入口"
+    if text.count(heading) != 1:
+        raise ValueError("Compact guide requires exactly one canonical entry section")
+    body = text.split(heading, 1)[1].split("\n## ", 1)[0].strip()
+    if not body:
+        raise ValueError("Compact entry section is empty")
+    guide = "<!-- Generated; edit references/execution-modes.md. source_sha256=" + hashlib.sha256(source).hexdigest() + " -->\n\n# Muse 导演助手：快速委托\n\n" + body + "\n"
+    if len(guide) > 3000:
+        raise ValueError("Compact guide exceeds 3000 characters")
+    return guide
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--skill-dir", type=Path, default=Path(__file__).resolve().parent.parent)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--check", action="store_true")
+    parser.add_argument("--compact", action="store_true")
     args = parser.parse_args()
-    output = args.output or args.skill_dir / "assets/muse-self-director.md"
+    output = args.output or args.skill_dir / ("assets/muse-quick-start.md" if args.compact else "assets/muse-self-director.md")
     try:
-        content = render_guide(args.skill_dir)
+        content = render_compact(args.skill_dir) if args.compact else render_guide(args.skill_dir)
         if args.check:
             ok = output.is_file() and output.read_text(encoding="utf-8") == content
             print(json.dumps({"status":"current" if ok else "stale", "characters":len(content)}, ensure_ascii=False))
             return 0 if ok else 2
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(content, encoding="utf-8", newline="\n")
-        print(json.dumps({"status":"generated", "characters":len(content), "source_files":len(SOURCES)}, ensure_ascii=False))
+        print(json.dumps({"status":"generated", "characters":len(content), "source_files":1 if args.compact else len(SOURCES)}, ensure_ascii=False))
         return 0
     except (OSError, ValueError) as exc:
         print(json.dumps({"status":"error", "error":str(exc)}, ensure_ascii=False))

@@ -231,6 +231,82 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertEqual(result["media_inspections"][0]["status"], "changed")
 
+    def inspect_fixture(self, flags, stream=None, name="inspection"):
+        data = json.loads(self.successful_probe().stdout)
+        data["streams"][0].update({"duration": "1.0", "sample_aspect_ratio": "1:1"})
+        data["streams"][0].update(stream or {})
+        probe = subprocess.CompletedProcess([], 0, json.dumps(data), "")
+        with patch.object(pipeline, "find_tool", return_value="fake-tool"), patch.object(pipeline.subprocess, "run", side_effect=[probe, subprocess.CompletedProcess([], 0, "", "")]):
+            return self.run_cli(*self.media_args(name=name, decode=True), *flags)
+
+    def test_spec_gate_is_separate_from_technical_and_semantic(self):
+        code, result = self.inspect_fixture(["--target-aspect", "1.77777778", "--min-short-side", "180", "--min-seconds", "1", "--max-seconds", "1", "--target-fps", "24", "--spec-scope", "raw"])
+        self.assertEqual(code, 0)
+        self.assertEqual(result["spec_gate"]["status"], "PASS")
+        self.assertEqual(result["spec_gate"]["scope"], "raw")
+        self.assertEqual(result["semantic_review"]["visual"], "unverified")
+        code, failed = self.inspect_fixture(["--min-short-side", "720"], name="failed")
+        self.assertEqual(code, 2)
+        self.assertEqual(failed["technical_checks"]["status"], "passed")
+        self.assertEqual(failed["status"], "spec_fail")
+
+    def test_aspect_uses_sar_rotation_and_tolerance(self):
+        code, result = self.inspect_fixture(["--target-aspect", "0.28125"], {"sample_aspect_ratio": "2:1", "side_data_list": [{"rotation": -90}]})
+        self.assertEqual(code, 0)
+        self.assertEqual(result["spec_gate"]["status"], "PASS")
+        self.assertEqual(self.inspect_fixture(["--target-aspect", "1.7877777777777777", "--aspect-tolerance", "0.01"], name="edge")[0], 0)
+
+    def test_missing_stream_duration_and_invalid_rotation_stay_unverified(self):
+        code, result = self.inspect_fixture(["--min-seconds", "1", "--target-aspect", "1.77777778"], {"duration": None, "tags": {"rotate": "unknown"}})
+        self.assertEqual(code, 2)
+        self.assertEqual(result["spec_gate"]["status"], "UNVERIFIED")
+        self.assertTrue(all(row["actual"] is None for row in result["spec_gate"]["criteria"]))
+
+    def test_missing_tools_do_not_pass_specs(self):
+        with patch.object(pipeline, "find_tool", return_value=None):
+            code, result = self.run_cli(*self.media_args(), "--target-fps", "24")
+        self.assertEqual(code, 2)
+        self.assertEqual(result["spec_gate"]["status"], "UNVERIFIED")
+
+    def test_invalid_thresholds_fail_before_output_creation(self):
+        for index, flags in enumerate((["--target-fps", "nan"], ["--min-seconds", "2", "--max-seconds", "1"], ["--aspect-tolerance", "-1"], ["--min-short-side", "inf"])):
+            name = "invalid-" + str(index)
+            self.assertEqual(self.run_cli(*self.media_args(name=name), *flags)[0], 1)
+            self.assertFalse((self.base / name).exists())
+
+    def test_changed_media_invalidates_spec_evidence(self):
+        args = self.media_args(decode=True)
+        def mutate(*unused, **unused_kw):
+            (self.base / "动画.mp4").write_bytes(b"changed")
+            return self.successful_probe()
+        calls = iter([mutate, lambda *a, **kw: subprocess.CompletedProcess([], 0, "", "")])
+        with patch.object(pipeline, "find_tool", return_value="fake-tool"), patch.object(pipeline.subprocess, "run", side_effect=lambda *a, **kw: next(calls)(*a, **kw)):
+            code, result = self.run_cli(*args, "--target-fps", "24")
+        self.assertEqual(code, 2)
+        self.assertEqual(result["spec_gate"]["status"], "UNVERIFIED")
+        self.assertEqual(result["spec_gate"]["criteria"][0]["status"], "UNVERIFIED")
+
+    def test_failed_spec_is_visible_in_packet_status(self):
+        self.snapshot()
+        self.inspect_fixture(["--target-fps", "30"], name="packet/inspections/v1")
+        code, result = self.run_cli("status", "--packet", str(self.base / "packet"))
+        self.assertEqual(code, 2)
+        self.assertEqual(result["media_inspections"][0]["spec_status"], "FAIL")
+
+    def test_failed_inspection_source_cannot_be_consistent(self):
+        self.inspect_fixture(["--target-fps", "30"])
+        original = self.base / "inspection/media-inspection.json"
+        for index, (name, role) in enumerate((("media-inspection.json", "检查报告"), ("renamed.json", "media-inspection"))):
+            (self.root / name).write_bytes(original.read_bytes())
+            self.config["sources"] = [{"path":name, "role":role}]
+            self.save_config()
+            packet = "source-report-" + str(index)
+            self.assertEqual(self.snapshot(packet)[0], 0)
+            code, result = self.run_cli("status", "--packet", str(self.base / packet))
+            self.assertEqual(code, 2)
+            self.assertEqual(result["media_inspections"][0]["spec_status"], "FAIL")
+            self.assertTrue(any(row["code"] == "media_inspection_needs_attention" for row in result["findings"]))
+
 
 if __name__ == "__main__":
     unittest.main()

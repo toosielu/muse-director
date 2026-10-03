@@ -63,6 +63,60 @@ class ShotLintTests(unittest.TestCase):
         self.card["adoption_evidence"] = None
         self.assertEqual(self.check()["status"], "needs_fix")
 
+    def test_text_only_does_not_bypass_adopted_image(self):
+        self.meta.update(text_only=True, references=[])
+        self.body = self.body.replace("[图1：身份]\n", "")
+        self.assertEqual(self.check()["status"], "needs_fix")
+        self.card["reference_images"] = []
+        self.assertEqual(self.check()["status"], "text_checked")
+
+    def test_timed_actions_are_valid_but_gaps_and_overflow_are_not(self):
+        self.body = self.body.replace("起点：手贴盒子\n动作：向右推\n终点：盒子停在B", "0–2秒：手贴盒子\n2–5秒：向右推\n5–8秒：松手停在B")
+        self.assertEqual(self.check()["status"], "text_checked")
+        self.body = self.body.replace("2–5秒", "3–5秒")
+        self.assertEqual(self.check()["status"], "needs_fix")
+        self.body = self.body.replace("3–5秒", "2–5秒").replace("5–8秒", "5–11秒")
+        self.assertEqual(self.check()["status"], "needs_fix")
+
+    def test_explicit_sound_policy_with_negation(self):
+        self.meta.update(allow_music=False, allow_dialogue=False)
+        self.body = self.body.replace("只有动作声", "轻背景音乐和旁白")
+        self.assertEqual(self.check()["status"], "needs_fix")
+        self.body = self.body.replace("轻背景音乐和旁白", "无背景音乐，无旁白，只有动作声")
+        self.assertEqual(self.check()["status"], "text_checked")
+
+    def test_frozen_constraints_and_camera_policy_are_optional(self):
+        self.card["constraint_block"] = "无水印"
+        self.meta["policies"] = {"max_camera_moves": 1, "required_literals": ["无字幕"]}
+        self.body += "约束：无水印，无字幕\n"
+        self.assertEqual(self.check()["status"], "text_checked")
+        self.body = self.body.replace("固定中景", "推镜然后环绕")
+        self.assertEqual(self.check()["status"], "needs_fix")
+        self.meta["policies"].pop("max_camera_moves")
+        self.assertEqual(self.check()["status"], "text_checked")
+
+    def test_embedded_project_limit(self):
+        self.meta["planning_limit_seconds"] = 8
+        self.assertEqual(self.check()["status"], "needs_fix")
+        self.meta["planning_limit_seconds"] = float("nan")
+        self.assertEqual(self.check()["status"], "needs_fix")
+
+    def test_establishing_shot_without_fake_character_card(self):
+        self.meta.update(cards=[], subject_count=0, references=[], text_only=True, style_prefix="9:16，二维插画")
+        shot = self.root / "empty-scene.md"
+        body = self.body.replace("[图1：身份]\n", "").replace("主体数：1", "主体数：0").replace("人物：圆脑袋，蓝外套\n", "")
+        shot.write_text("### 制作任务\n```json\n" + json.dumps(self.meta) + "\n```\n### 模型输入（原样转交）\n" + body, encoding="utf-8")
+        self.assertEqual(lint(shot, [])["status"], "text_checked")
+
+    def test_guide_heading_level_does_not_leak_management_section(self):
+        self.check()
+        shot = self.root / "shot.md"
+        shot.write_text(shot.read_text(encoding="utf-8").replace("### ", "#### "), encoding="utf-8")
+        result = lint(shot, [self.root / "card.json"])
+        self.assertEqual(result["status"], "text_checked")
+        self.assertNotIn("额外管理要求", result["model_input"])
+        self.assertNotIn("#### 回传", result["model_input"])
+
 
 if __name__ == "__main__":
     unittest.main()

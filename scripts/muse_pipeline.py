@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import math
+from fractions import Fraction
 from pathlib import Path
 import shutil
 import subprocess
@@ -267,18 +268,27 @@ def status(args):
             findings.append({"code": "source_drift", "path": source["path"], "current_source": original_check["status"], "snapshot_copy": captured_check["status"]})
     media_checks = []
     inspection_root = output / "inspections"
+    inspection_paths = set()
     if inspection_root.is_dir():
-        for report_path in sorted(inspection_root.rglob("media-inspection.json")):
+        inspection_paths.update(inspection_root.rglob("media-inspection.json"))
+    for source in packet["sources"]:
+        if Path(source["path"]).name == "media-inspection.json" or source["role"].lower() in {"media-inspection", "inspection"}:
             try:
-                report = read_json(report_path)
-                check = hash_check(report["media"]["path"], report["media"]["sha256"])
-                technical_status = report.get("technical_checks", {}).get("status", "not_checked")
-                check.update({"inspection_path": str(report_path), "technical_status": technical_status, "visual": "unverified", "audio": "unverified", "lipsync": "unverified"})
-                media_checks.append(check)
-                if check["status"] != "unchanged" or technical_status != "passed":
-                    findings.append({"code": "media_inspection_needs_attention", "inspection_path": str(report_path), "media_hash_status": check["status"], "technical_status": technical_status})
-            except (PipelineError, KeyError, TypeError) as exc:
-                findings.append({"code": "invalid_media_inspection", "inspection_path": str(report_path), "error": str(exc)})
+                inspection_paths.add(rooted_source(output, source["snapshot_path"]))
+            except PipelineError as exc:
+                findings.append({"code": "invalid_media_inspection", "path": source["path"], "error": str(exc)})
+    for report_path in sorted(inspection_paths):
+        try:
+            report = read_json(report_path)
+            check = hash_check(report["media"]["path"], report["media"]["sha256"])
+            technical_status = report.get("technical_checks", {}).get("status", "not_checked")
+            spec_status = report.get("spec_gate", {}).get("status", "NOT_REQUESTED")
+            check.update({"inspection_path": str(report_path), "technical_status": technical_status, "spec_status": spec_status, "visual": "unverified", "audio": "unverified", "lipsync": "unverified"})
+            media_checks.append(check)
+            if check["status"] != "unchanged" or technical_status != "passed" or spec_status not in {"PASS", "NOT_REQUESTED"}:
+                findings.append({"code": "media_inspection_needs_attention", "inspection_path": str(report_path), "media_hash_status": check["status"], "technical_status": technical_status, "spec_status": spec_status})
+        except (PipelineError, KeyError, TypeError, AttributeError, ValueError, OSError) as exc:
+            findings.append({"code": "invalid_media_inspection", "inspection_path": str(report_path), "error": str(exc)})
     return {"schema_version": SCHEMA_VERSION, "checked_at": now(), "status": "needs_attention" if findings else "consistent", "packet_path": str(packet_path), "packet_integrity": integrity, "task_id": packet["task_id"], "phase": packet["phase"], "baseline": packet["baseline"], "authorization": packet["authorization"], "sources": checks, "media_inspections": media_checks, "issues": packet["issues"], "decisions": packet["decisions"], "findings": findings, "semantic_review": {"visual": "unverified", "audio": "unverified", "lipsync": "unverified"}}, 2 if findings else 0
 
 
@@ -302,7 +312,73 @@ def file_signature(path):
     return (stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns, stat.st_ino)
 
 
+def rational(value):
+    try:
+        number = float(Fraction(str(value).replace(":", "/")))
+        return number if math.isfinite(number) and number > 0 else None
+    except (ValueError, ZeroDivisionError, OverflowError):
+        return None
+
+
+def spec_targets(args):
+    names = ("target_aspect", "min_short_side", "min_seconds", "max_seconds", "target_fps")
+    targets = {name: getattr(args, name, None) for name in names}
+    for name, value in targets.items():
+        if value is not None and (finite_number(value) is None or value <= 0):
+            raise PipelineError(name + " must be positive and finite")
+    for name in ("aspect_tolerance", "fps_tolerance"):
+        value = getattr(args, name, 0.01)
+        if finite_number(value) is None or value < 0:
+            raise PipelineError(name + " must be nonnegative and finite")
+        targets[name] = value
+    if targets["min_seconds"] is not None and targets["max_seconds"] is not None and targets["min_seconds"] > targets["max_seconds"]:
+        raise PipelineError("min_seconds must not exceed max_seconds")
+    return targets
+
+
+def evaluate_specs(metadata, targets, scope):
+    rows = []
+    videos = metadata.get("video", [])
+    video = videos[0] if len(videos) == 1 else {}
+    width, height = finite_number(video.get("width")), finite_number(video.get("height"))
+    valid_size = width is not None and height is not None and width > 0 and height > 0
+    aspect = rational(video.get("display_aspect_ratio"))
+    if aspect is None and valid_size:
+        sar = rational(video.get("sample_aspect_ratio"))
+        if sar is not None:
+            aspect = width / height * sar
+    rotations = video.get("rotations", [])
+    rotation = rotations[0] if rotations else 0
+    if rotation is None or any(value is None or abs(value - rotation) > 1e-6 for value in rotations) or abs(rotation / 90 - round(rotation / 90)) > 1e-6:
+        aspect = None
+    elif aspect is not None and round(rotation / 90) % 2:
+        aspect = 1 / aspect
+    # Stream duration only: a longer audio/container duration cannot prove video coverage.
+    duration = finite_number(video.get("duration_seconds"))
+    fps = rational(video.get("frame_rate"))
+    values = {"target_aspect": aspect, "min_short_side": min(width, height) if valid_size else None,
+              "min_seconds": duration, "max_seconds": duration, "target_fps": fps}
+    for name, actual in values.items():
+        target = targets[name]
+        if target is None:
+            continue
+        if actual is None or actual <= 0:
+            state = "UNVERIFIED"
+        elif name == "target_aspect":
+            state = "PASS" if abs(actual - target) <= targets["aspect_tolerance"] + 1e-12 else "FAIL"
+        elif name == "target_fps":
+            state = "PASS" if abs(actual - target) <= targets["fps_tolerance"] + 1e-12 else "FAIL"
+        elif name == "max_seconds":
+            state = "PASS" if actual <= target else "FAIL"
+        else:
+            state = "PASS" if actual >= target else "FAIL"
+        rows.append({"criterion": name, "target": target, "actual": actual, "status": state})
+    state = "NOT_REQUESTED" if not rows else "FAIL" if any(row["status"] == "FAIL" for row in rows) else "UNVERIFIED" if any(row["status"] == "UNVERIFIED" for row in rows) else "PASS"
+    return {"status": state, "scope": scope, "criteria": rows, "notes": ["Average FPS is not a constant-frame-rate guarantee", "Hard cuts, event coverage and native generation resolution remain unverified"]}
+
+
 def inspect_media(args):
+    targets = spec_targets(args)
     media = Path(args.media).expanduser().resolve(strict=True)
     if not media.is_file():
         raise PipelineError("media must be a file")
@@ -325,7 +401,16 @@ def inspect_media(args):
                 data = json.loads(result.stdout)
                 if not isinstance(data, dict) or not isinstance(data.get("streams", []), list):
                     raise ValueError("Invalid ffprobe JSON structure")
-                video = [{"index": stream.get("index"), "codec": stream.get("codec_name"), "width": stream.get("width"), "height": stream.get("height"), "pixel_format": stream.get("pix_fmt"), "frame_rate": stream.get("avg_frame_rate"), "duration_seconds": finite_number(stream.get("duration"))} for stream in data.get("streams", []) if stream.get("codec_type") == "video"]
+                video = []
+                for stream in data.get("streams", []):
+                    if stream.get("codec_type") != "video" or stream.get("disposition", {}).get("attached_pic"):
+                        continue
+                    rotations = [finite_number(item["rotation"]) for item in stream.get("side_data_list", []) if "rotation" in item]
+                    if "rotate" in stream.get("tags", {}):
+                        rotations.append(finite_number(stream["tags"]["rotate"]))
+                    # +90/-270 are equivalent display rotations.
+                    rotations = [value % 360 if value is not None else None for value in rotations]
+                    video.append({"index": stream.get("index"), "codec": stream.get("codec_name"), "width": stream.get("width"), "height": stream.get("height"), "pixel_format": stream.get("pix_fmt"), "frame_rate": stream.get("avg_frame_rate"), "duration_seconds": finite_number(stream.get("duration")), "sample_aspect_ratio": stream.get("sample_aspect_ratio"), "display_aspect_ratio": stream.get("display_aspect_ratio"), "rotations": rotations})
                 audio = [{"index": stream.get("index"), "codec": stream.get("codec_name"), "channels": stream.get("channels"), "sample_rate": stream.get("sample_rate"), "duration_seconds": finite_number(stream.get("duration"))} for stream in data.get("streams", []) if stream.get("codec_type") == "audio"]
                 duration = finite_number(data.get("format", {}).get("duration"))
                 if duration is None:
@@ -370,9 +455,17 @@ def inspect_media(args):
         report["media"].update({"sha256_after": None, "changed_during_inspection": True, "post_check_error": str(exc)})
     if changed:
         technical["status"] = "changed_during_inspection"
+    report["spec_gate"] = evaluate_specs(report["metadata"], targets, getattr(args, "spec_scope", "unspecified"))
+    if changed and report["spec_gate"]["status"] != "NOT_REQUESTED":
+        report["spec_gate"]["status"] = "UNVERIFIED"
+        for row in report["spec_gate"]["criteria"]:
+            row["status"] = "UNVERIFIED"
+        report["spec_gate"]["notes"].append("Media changed during inspection; recorded metadata cannot certify the final file")
     report["completed_at"] = now()
     write_json(output / "media-inspection.json", report)
-    return {"status": technical["status"], "inspection_path": str(output / "media-inspection.json"), "media_sha256": initial_hash, "changed_during_inspection": changed, "technical_checks": technical, "semantic_review": report["semantic_review"]}, 0 if technical["status"] == "passed" else 2
+    gate = report["spec_gate"]
+    overall = "spec_" + gate["status"].lower() if technical["status"] == "passed" and gate["status"] not in {"PASS", "NOT_REQUESTED"} else technical["status"]
+    return {"status": overall, "inspection_path": str(output / "media-inspection.json"), "media_sha256": initial_hash, "changed_during_inspection": changed, "technical_checks": technical, "spec_gate": gate, "semantic_review": report["semantic_review"]}, 0 if overall == "passed" else 2
 
 
 def main(argv=None):
@@ -392,6 +485,11 @@ def main(argv=None):
     command.add_argument("--decode", action="store_true")
     command.add_argument("--task-id", help="User-declared task association; not verified against Muse")
     command.add_argument("--declared-version", help="User-declared media version; never inferred")
+    for flag in ("target-aspect", "min-short-side", "min-seconds", "max-seconds", "target-fps"):
+        command.add_argument("--" + flag, type=float)
+    command.add_argument("--aspect-tolerance", type=float, default=0.01)
+    command.add_argument("--fps-tolerance", type=float, default=0.01)
+    command.add_argument("--spec-scope", choices=("raw", "delivery", "unspecified"), default="unspecified")
     args = parser.parse_args(argv)
     try:
         result, code = {"snapshot": snapshot, "status": status, "inspect": inspect_media}[args.command](args)

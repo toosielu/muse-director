@@ -1,7 +1,7 @@
 from pathlib import Path
 import tempfile
 import unittest
-from build_muse_guide import render_guide, SOURCES, independent_markdown
+from build_muse_guide import render_guide, render_compact, SOURCES, independent_markdown
 
 
 class GuideBuildTests(unittest.TestCase):
@@ -55,6 +55,24 @@ class GuideBuildTests(unittest.TestCase):
         self.assertNotIn("完整交接与返修演示", converted)
         self.assertIn("上例只说明镜头设计", converted)
         self.assertIn("镜头检查与返修记录", converted)
+
+    def test_compact_is_generated_from_same_source(self):
+        path = self.root / "references/execution-modes.md"
+        path.write_text("# 范围\n## 标准委托入口\n一条实际规则\n## 其他\n不进入快速版", encoding="utf-8")
+        quick = render_compact(self.root)
+        self.assertIn("一条实际规则", quick)
+        self.assertNotIn("不进入快速版", quick)
+        self.assertEqual(quick, render_compact(self.root))
+        self.assertIn("一条实际规则", render_guide(self.root))
+        path.write_text("# 范围\n## 标准委托入口\n新的规则", encoding="utf-8")
+        self.assertNotEqual(quick, render_compact(self.root))
+
+    def test_compact_missing_or_oversize_entry_fails(self):
+        with self.assertRaises(ValueError):
+            render_compact(self.root)
+        (self.root / "references/execution-modes.md").write_text("## 标准委托入口\n" + "长" * 3000, encoding="utf-8")
+        with self.assertRaises(ValueError):
+            render_compact(self.root)
 
 
 if __name__ == "__main__":
