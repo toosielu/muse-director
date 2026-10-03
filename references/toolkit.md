@@ -37,6 +37,8 @@ python "<skill>/scripts/muse_pipeline.py" snapshot --project-root "<project>" --
 
 `decisions` 的项目含 `id/value/status/evidence`，status 为 `confirmed/provisional/pending`。`issues` 的项目含 `id/timecode/observation/required_change/acceptance/status/evidence`，尚未解决用 `open`；关闭必须记录证据。资料字段不会被当成命令执行，空证据会保留为待核验。
 
+自主成片时，`baseline.approval_evidence` 可填真实的全片委托及主控选用记录，普通决定的 `confirmed` 表示主控在委托范围内已选定，证据写相应来源，不伪写用户逐项批准。模板中的空值是未填写状态，不能据此要求用户新增审批。`authorization.mode` 必须保留工具实际支持的 `prepare_only`：它限定本地脚本只准备记录，不撤销用户对Muse的实际制作委托；制作权限另按真实用户请求和平台权限判断。
+
 `sources` 的每项包含 project-root 内相对 `path` 和 `role`。工具解析实际路径并拒绝根目录外的来源。仅加入当前任务需要的材料，不把整部历史档案全部给 Muse。
 
 输出包括 `packet.json`、`handoff.md` 和来源快照。记录来源摘要以便检测漂移。交接单是待发送文本；本地来源快照不等于 Muse 已收到附件。需要发送时将必要内容粘贴或使用实际附件/授权链接。
@@ -65,7 +67,13 @@ FFprobe/FFmpeg 默认从当前环境寻找；有工具但未加入搜索路径�
 
 报告中的语义项仍未核验；结果解释与采用判定见 [审查覆盖](workflow.md#审查覆盖)。
 
-## 第一版边界
+## 镜头输入与指南维护
+
+角色卡与镜头提示词按 [创作与检查](shot-design-checks.md) 填写。提交前用 `python "<skill>/scripts/lint_shot.py" --shot "<project>/shots/S01.md" --card "<project>/cards/C01.json"`，多人再追加 `--card`。已记录项目单次容量时可传 `--max-clip-seconds` 作规划检查；它不会验证平台上限。返回0表示已做文本检查，2表示输入需修，1表示格式/读取错误；真实上传与语义仍未核验。缺Python时按同样检查项由主控核对，不挡住普通创作。
+
+维护者修改共同参考/模板后执行 `python "<skill>/scripts/build_muse_guide.py"` 重建独立指南，再执行同脚本 `--check`。0为与源一致、2为过时，1为读取/构建错误。源文件清单在脚本中，不需要递归合并整个技能；生成输出不含本地相对链接，直接交给Muse即可。不要只改 `assets/muse-self-director.md` 而遗失下一次重建。
+
+## 工作包工具边界
 
 此工具不下载、不上传、不发消息、不生成媒体、不进行镜头对齐或声音识别，也不自动维护所有生产消息和附件。它先解决可重复的来源冻结、状态漂移和文件检查。
 
