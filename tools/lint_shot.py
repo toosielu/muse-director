@@ -10,8 +10,13 @@ INPUT_HEADING = "### 模型输入（原样转交）"
 
 
 BEAT_SPLIT = re.compile(r"然后|接着|随后|，再|并且|；|;")
-HOLD_LINE = re.compile(r"保持|静止|不动")
-END_POSE = re.compile(r"停在|停下|松手|回到|退回")
+ACTION_HINT = re.compile(r"升起|举起|落地|转向|转身|挥手|移动|走|跑|推|松手|回到|退回|抖|眨|起伏|并|然后|接着|随后")
+POSE_CLAUSE = re.compile(
+    r"(?:.*?(?:自然)?保持(?:不动|静止|终点姿态|.+姿势|坐姿|站姿|.+状态)"
+    r"|静止|不动|停下"
+    r"|.*?(?:位于|停在|坐在|站在|放在|贴着|贴|在).+"
+    r"|.*?(?:双眼睁开|两耳下垂))"
+)
 TIMED_LINE = re.compile(r"^(\d+(?:\.\d+)?)\s*[-–—~～]\s*(\d+(?:\.\d+)?)\s*秒[：:]\s*(\S.*?)$", re.M)
 
 
@@ -19,18 +24,22 @@ def action_beats(text):
     return len([part for part in BEAT_SPLIT.split(text) if part.strip()])
 
 
+def pose_only(text):
+    """Recognize simple static clauses, never exempt a line by its position."""
+    clauses = [part.strip().rstrip("。.") for part in re.split(r"[，,]", text) if part.strip()]
+    return bool(clauses) and not ACTION_HINT.search(text) and all(
+        POSE_CLAUSE.fullmatch(clause) for clause in clauses
+    )
+
+
 def shot_beat_count(body):
     """Count story beats. Start pose, end pose and hold are not extra beats."""
     segments = TIMED_LINE.findall(body)
     if segments:
         total = 0
-        for index, (_, _, action) in enumerate(segments):
+        for _, _, action in segments:
             beats = action_beats(action)
-            scaffolding = beats <= 1 and (
-                (index == 0 and len(segments) > 1)
-                or HOLD_LINE.search(action)
-                or END_POSE.search(action)
-            )
+            scaffolding = beats <= 1 and pose_only(action)
             if not scaffolding:
                 total += beats
         return total
@@ -212,9 +221,15 @@ def lint(shot_path, card_paths, max_clip_seconds=None):
     allow_timed_negation = policies.get("allow_timed_negation", False)
     if type(allow_timed_negation) is not bool:
         raise ValueError("allow_timed_negation must be a boolean")
-    timed_actions = [action for _, _, action in TIMED_LINE.findall(body)]
-    if not allow_timed_negation and any("不要" in action for action in timed_actions):
-        add("timed_negation", "FAIL", "Rewrite 不要 inside timed lines as the visible action; keep real bans in the constraint line")
+    frozen_segments = {
+        segment for original in frozen.values() for segment in TIMED_LINE.findall(original)
+    } if mode == "detailed" else set()
+    negated_segments = [segment for segment in TIMED_LINE.findall(body) if "不要" in segment[2]]
+    if not allow_timed_negation:
+        if any(segment not in frozen_segments for segment in negated_segments):
+            add("timed_negation", "FAIL", "Rewrite newly added 不要 inside timed lines; do not change adopted user text without approval")
+        if any(segment in frozen_segments for segment in negated_segments):
+            add("timed_negation", "WARN", "Preserve the exact adopted timed line; its generation effectiveness needs manual review")
     camera_limit = policies.get("max_camera_moves", 1)
     if camera_limit is not None:
         if type(camera_limit) is not int or camera_limit < 0:

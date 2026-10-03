@@ -172,6 +172,55 @@ class ShotLintTests(unittest.TestCase):
         self.assertNotIn("额外管理要求", result["model_input"])
         self.assertNotIn("#### 回传", result["model_input"])
 
+    def timed_body(self, lines):
+        self.body = self.body.replace(
+            "起点：手贴盒子\n动作：向右推\n终点：盒子停在B", lines
+        )
+
+    def test_first_timed_segment_with_action_counts(self):
+        self.timed_body("0–2秒：举起盒子\n2–5秒：转身\n5–8秒：挥手\n8–10秒：保持不动")
+        self.assertTrue(any(row["code"] == "beat_limit" and row["status"] == "FAIL"
+                            for row in self.check()["findings"]))
+
+    def test_hold_word_does_not_hide_motion(self):
+        self.timed_body("0–2秒：手贴盒子\n2–4秒：举起盒子\n4–6秒：转身\n6–8秒：保持微笑并走向门口\n8–10秒：保持不动")
+        self.assertTrue(any(row["code"] == "beat_limit" for row in self.check()["findings"]))
+
+    def test_release_is_a_real_action(self):
+        self.timed_body("0–2秒：手贴盒子\n2–4秒：举起盒子\n4–6秒：转身\n6–8秒：松手\n8–10秒：保持不动")
+        self.assertTrue(any(row["code"] == "beat_limit" for row in self.check()["findings"]))
+
+    def test_adopted_timed_negation_is_preserved_with_warning(self):
+        original = "2–5秒：不要转头，向右推"
+        self.meta.update(mode="detailed", frozen_blocks={"action": original})
+        self.timed_body("0–2秒：手贴盒子\n" + original + "\n5–8秒：停在B")
+        report = self.check()
+        self.assertEqual(report["status"], "text_checked")
+        self.assertIn(original, report["model_input"])
+        self.assertTrue(any(row["code"] == "timed_negation" and row["status"] == "WARN"
+                            for row in report["findings"]))
+        self.body = self.body.replace(original, "2–5秒：向右推")
+        self.assertTrue(any(row["code"] == "original_blocks" and row["status"] == "FAIL"
+                            for row in self.check()["findings"]))
+
+    def test_detailed_mode_does_not_exempt_new_negation(self):
+        self.meta.update(mode="detailed", frozen_blocks={"character": "圆脑袋，蓝外套"})
+        self.timed_body("0–2秒：手贴盒子\n2–5秒：不要转头，向右推\n5–8秒：停在B")
+        self.assertTrue(any(row["code"] == "timed_negation" and row["status"] == "FAIL"
+                            for row in self.check()["findings"]))
+
+    def test_frozen_negation_does_not_exempt_added_line(self):
+        original = "2–5秒：不要转头，向右推"
+        self.meta.update(mode="detailed", frozen_blocks={"action": original})
+        self.timed_body("0–2秒：手贴盒子\n" + original + "\n5–8秒：不要挥手，停在B")
+        self.assertTrue(any(row["code"] == "timed_negation" and row["status"] == "FAIL"
+                            for row in self.check()["findings"]))
+
+    def test_timed_negation_policy_can_be_explicitly_overridden(self):
+        self.meta["policies"] = {"allow_timed_negation": True}
+        self.timed_body("0–2秒：手贴盒子\n2–5秒：不要转头，向右推\n5–8秒：停在B")
+        self.assertEqual(self.check()["status"], "text_checked")
+
 
 if __name__ == "__main__":
     unittest.main()
