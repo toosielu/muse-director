@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "project_name": "待填写项目名",
+  "episode": "待填写集数或作品标识",
+  "task_id": "待填写本轮唯一标识",
+  "thread_url": null,
+  "baseline": {
+    "script_version": "尚未采用",
+    "visual_version": "尚未制作",
+    "approval_evidence": null
+  },
+  "phase": "preparation",
+  "sources": [{"path": "brief.md", "role": "当前制作简报；采用状态见正文"}],
+  "constraints": [],
+  "decisions": [],
+  "issues": [],
+  "deliverables": [],
+  "authorization": {"mode": "prepare_only", "evidence": null},
+  "next_action": "根据实际简报整理本轮工作单；尚未授权发送或生成"
+}
