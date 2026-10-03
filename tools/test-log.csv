@@ -1,0 +1,1 @@
+project_id,original_shot_id,mode,test_id,input_version,character_version,actual_prompt,reference_evidence,submission_index,known_video_calls,charge_evidence_or_unknown,raw_file,sha256,aspect,width,height,duration,u0_status,content_status,dynamic_coverage,audio_coverage,defect,change,adopted_candidate,usable_in,usable_out,film_time,remaining_budget,source_or_unknown

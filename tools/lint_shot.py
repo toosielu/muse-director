@@ -114,7 +114,10 @@ def lint(shot_path, card_paths, max_clip_seconds=None):
     if type(budget) not in (int, float) or not 0 < budget < float("inf"):
         add("planning_capacity", "FAIL", "Positive finite planning capacity required")
     else:
-        for limit in (max_clip_seconds, meta.get("planning_limit_seconds")):
+        # The provisional planning default follows the canonical main file;
+        # explicit adopted capacity overrides it. It is not a measured limit.
+        effective_limit = max_clip_seconds if max_clip_seconds is not None else meta.get("planning_limit_seconds", 10)
+        for limit in (effective_limit,):
             if limit is not None and (type(limit) not in (int, float) or not 0 < limit < float("inf") or budget > limit):
                 add("planning_capacity", "FAIL", "Planning capacity exceeds the supplied project limit")
         if not isinstance(window, list) or len(window) != 2 or any(type(value) not in (int, float) for value in window) or not 0 <= window[0] < window[1] <= budget:
@@ -137,37 +140,55 @@ def lint(shot_path, card_paths, max_clip_seconds=None):
     policies = meta.get("policies", {})
     if not isinstance(policies, dict):
         raise ValueError("policies must be an object")
+    mode = meta.get("mode", "idea")
+    if mode not in ("idea", "detailed", "test"):
+        raise ValueError("mode must be idea, detailed or test")
+    frozen = meta.get("frozen_blocks", {})
+    if not isinstance(frozen, dict) or any(not isinstance(value, str) or not value.strip() for value in frozen.values()):
+        raise ValueError("frozen_blocks must map names to non-empty original strings")
+    if mode == "detailed" and not frozen:
+        add("original_blocks", "FAIL", "Detailed mode requires extracted original frozen blocks")
+    for name, original in frozen.items():
+        if original not in body:
+            add("original_blocks", "FAIL", "Original adopted block changed or missing: " + name)
     for key in ("scene_block", "constraint_block"):
         block = meta.get(key, "")
         if not isinstance(block, str):
             raise ValueError(key + " must be a string")
         if block and block not in body:
             add(key, "FAIL", "Frozen project block differs")
+    adopted_constraint = frozen.get("constraint") or meta.get("constraint_block")
+    required_default = [adopted_constraint] if mode == "detailed" and adopted_constraint else ["无文字", "无字幕", "无水印"]
     for key in ("required_literals", "forbidden_literals"):
-        literals = policies.get(key, [])
+        literals = policies.get(key, required_default if key == "required_literals" else [])
         if not isinstance(literals, list) or any(not isinstance(item, str) or not item for item in literals):
             raise ValueError(key + " must be a list of non-empty strings")
         for literal in literals:
             if (literal not in body) if key == "required_literals" else positive_occurrence(body, re.escape(literal)):
                 add("project_policy", "FAIL", key + ": " + literal)
     sound = "\n".join(re.findall(r"^声音：[ \t]*(.*)$", body, re.M))
-    for key, pattern in (("allow_music", r"背景音乐|配乐|BGM|music"), ("allow_dialogue", r"对白|旁白|说话|dialogue|narration")):
-        setting = meta.get(key, policies.get(key))
+    for key, pattern in (("allow_music", r"音乐|配乐|BGM|music"), ("allow_dialogue", r"对白|旁白|台词|说话|dialogue|narration")):
+        setting = meta.get(key, policies.get(key, False))
         if setting is not None and type(setting) is not bool:
             raise ValueError(key + " must be a boolean")
         if setting is False and positive_occurrence(sound, pattern):
             add("sound_policy", "FAIL", key + " contradicts sound input")
-    camera_limit = policies.get("max_camera_moves")
+    camera_limit = policies.get("max_camera_moves", 1)
     if camera_limit is not None:
         if type(camera_limit) is not int or camera_limit < 0:
             raise ValueError("max_camera_moves must be a nonnegative integer")
         camera = "\n".join(re.findall(r"^镜头：[ \t]*(.*)$", body, re.M))
-        groups = (r"推镜|推进|push|dolly.?in", r"拉镜|拉远|pull|dolly.?out", r"横移|pan|truck", r"环绕|orbit", r"跟随|跟拍|track", r"升降|crane")
+        groups = (r"固定|static|locked", r"推镜|推近|推进|push|dolly.?in", r"拉镜|拉远|pull|dolly.?out", r"横移|摇镜|摇摄|pan|truck", r"环绕|orbit", r"跟随|跟拍|track", r"升降|crane")
         if sum(positive_occurrence(camera, pattern) for pattern in groups) > camera_limit:
             add("camera_policy", "FAIL", "Recognized camera move types exceed explicit project limit")
-    management = r"先查能力|逐镜批准|返回.*Task ID|回传.*版本|生成后.*质检"
+        if camera_limit == 1 and re.search(r"然后|再", camera):
+            add("camera_policy", "FAIL", "Sequential camera instructions conflict with adopted single-camera policy")
+    management = r"请用下面|原样使用|贴给我|先查能力|逐镜批准|返回.*Task ID|回传.*版本|生成后.*质检"
     if positive_occurrence(body, management):
-        add("management_in_model_input", "FAIL" if policies.get("forbid_management_text") is True else "WARN", "Keep orchestration outside the visual model input")
+        add("management_in_model_input", "FAIL" if policies.get("forbid_management_text", True) is True else "WARN", "Keep orchestration outside the visual model input")
+    visual = "\n".join(re.findall(r"^(?:起点|动作|终点|镜头|场景)：[ \t]*(.*)$", body, re.M))
+    if re.search(r"不要|禁止", visual):
+        add("visual_negation", "WARN", "Compare positive visual states without deleting adopted prohibitions; effectiveness untested")
     if not meta.get("required_event") or str(meta["required_event"]).startswith("待"):
         add("required_event", "FAIL", "Actual necessary event must be recorded")
     add("manual_review", "WARN", "Check real uploads, visual/text consistency, causal action, continuity and actual permissions separately")
