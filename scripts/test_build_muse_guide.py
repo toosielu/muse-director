@@ -25,6 +25,15 @@ class GuideBuildTests(unittest.TestCase):
         (self.root / SOURCES[0]).write_text("# 新的委托规则", encoding="utf-8")
         self.assertNotEqual(before, render_guide(self.root))
 
+    def test_recovery_reference_is_embedded_and_versioned(self):
+        recovery = self.root / "references/rejection-diagnostics.md"
+        recovery.write_text("# 拒收诊断与有限恢复\n唯一恢复记录", encoding="utf-8")
+        before = render_guide(self.root)
+        self.assertIn("## 拒收诊断与有限恢复\n唯一恢复记录", before)
+        self.assertIn('"references/rejection-diagnostics.md":', before)
+        recovery.write_text("# 拒收诊断与有限恢复\n已更新恢复记录", encoding="utf-8")
+        self.assertNotEqual(before, render_guide(self.root))
+
     def test_missing_source_is_an_error(self):
         (self.root / SOURCES[0]).unlink()
         with self.assertRaises(OSError):
@@ -39,6 +48,13 @@ class GuideBuildTests(unittest.TestCase):
         self.assertIn("受限对照试验", converted)
         self.assertNotIn("审查覆盖", converted)
         self.assertIn("## 受限对照试验", render_guide(self.root))
+
+    def test_full_example_claim_is_not_redirected_to_short_example(self):
+        text = "完整交接与返修演示见 [制作与返修示例](worked-example.md)。"
+        converted = independent_markdown(text)
+        self.assertNotIn("完整交接与返修演示", converted)
+        self.assertIn("上例只说明镜头设计", converted)
+        self.assertIn("镜头检查与返修记录", converted)
 
 
 if __name__ == "__main__":

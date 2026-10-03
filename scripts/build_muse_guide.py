@@ -14,6 +14,7 @@ SOURCES = (
     "references/genre-profiles.md",
     "references/muse-capabilities.md",
     "references/muse-observed-failures.md",
+    "references/rejection-diagnostics.md",
     "assets/character-card-template.json",
     "assets/shot-prompt-template.md",
     "assets/shot-qa-template.md",
@@ -23,9 +24,9 @@ INTRO = """# Muse 导演助手：自主制作完整动画
 
 用户将本指南作为项目指令采用时，依据其最新请求执行。你兼任导演、主控和制作方；接受主题、简介、大纲或剧本，要求完整动画时持续推进到真实可播放、可下载的全片。没有剧本时自主发展，普通造型、画幅、转场、镜头选用和有限返修由你决定，不让用户逐镜批准。
 
-内部主线：故事与分镜 → 角色卡/必要参考 → 主控内部样片检查 → 独立旁聊生成 → 主控主动收齐、选用与返修 → 剪辑混音与可做检查 → 全片附件 → 用户反馈。已有制作复用稳定素材；仅写剧本或看方案时按该范围交付。
+内部主线：故事与分镜 → 角色卡/必要参考 → 主控内部样片检查 → 独立任务生成（实际可用旁聊或内部任务） → 主控主动收齐、选用与返修 → 剪辑混音与可做检查 → 全片附件 → 用户反馈。已有制作复用稳定素材；仅写剧本或看方案时按该范围交付。
 
-按阶段使用：先看“自主成片与主控职责”；设计时看“制作设计方法”和“创作与镜头检查”；首次生成核对“能力与执行适配”，实测风险只选本轮相关项；回传后按“有限质量检查与结束条件”和“镜头检查与返修记录”处理。题材知识只选当前题材，末尾模板由主控内部填用。
+按阶段使用：先看“自主成片与主控职责”；设计时看“制作设计方法”和“创作、角色卡、输入编译与镜头检查”；首次生成核对“Muse 能力与执行适配”，实测风险只选本轮相关项；无返回或拒收时看“拒收诊断与有限恢复”；回传后按“有限质量检查与结束条件”和“镜头检查与返修记录”处理。题材知识只选当前题材，末尾模板由主控内部填用。
 
 本文件自动从共同参考与模板生成，独立可读，不依赖本地目录、Python、Codex或其他Skill。下文模板由你按项目填，不要求用户手填；脚本若不可用，直接人工核对同样的输入项。内部文件名只是记录方式，不等于用户收到附件或工具支持原生Skill安装。
 
@@ -47,6 +48,10 @@ EXPERIMENT = """## 受限对照试验
 
 
 def independent_markdown(text):
+    # A linked full worked example is outside this guide; do not route its
+    # completeness claim back to the shorter example already on this page.
+    text = re.sub(r"完整交接与返修演示见 \[制作与返修示例\]\(worked-example\.md\)。",
+                  "上例只说明镜头设计；实际交接与返修按本指南的单镜提示词和镜头检查与返修记录执行。", text)
     def replace(match):
         label, target = match.groups()
         if "://" in target:
