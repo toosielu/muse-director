@@ -10,12 +10,15 @@
   "version": "v1",
   "cards": [{"card_id": "C01", "version": "v1"}],
   "subject_count": 1,
+  "text_only": false,
   "references": [{"order": 1, "source": "待交接", "role": "身份母版"}],
   "prompt_budget_seconds": 10,
+  "planning_limit_seconds": null,
   "usable_window": [0, 6],
   "capability_evidence": "暂无单次上限实测；10秒仅规划提示容量，不是精确duration参数",
   "required_event": "待填写必要状态变化",
   "changed_variable": "首版",
+  "policies": {"required_literals": [], "forbidden_literals": []},
   "return_to": "主控：自行选择候选、有限返修并继续整片，不请求用户逐镜批准"
 }
 ```
@@ -36,4 +39,8 @@
 
 ### 回传与自检（不进入生成）
 
+仅纯文字实验可明确改为 `text_only:true` 与空参考；已有卡片的必要图不能由这个开关取消。无人建立镜可用空卡列表、主体数0和本镜style_prefix。按秒分段动作可替代起点/动作/终点，需连续且在规划窗口内。项目确有约束时再填可选scene_block、constraint_block、allow_music、allow_dialogue与policies，不把样例当统一禁令。
+
 给主控真实原片/可用段、实测时长、可见工具调用次数与提交文本、实际参考顺序及缺陷时间点。首中末与关键接触加密抽帧；不能连续看听时明确未核验。自检见镜头QA模板，主控依据结果继续整合全片。
+
+短暂事件另写必要次数/窗口/局部区域与采样覆盖；每秒抽帧未命中不自动判未发生。原片规格、最终交付规格、技术状态与事件结果分别回传，附件/可访问链接可用，不虚构本地路径或摘要。
