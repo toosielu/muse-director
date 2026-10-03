@@ -1,6 +1,6 @@
 interface:
   display_name: "Muse 导演助手"
-  short_description: "围绕 Muse 成片效果优化故事、分镜、参考与镜头指令，审查实际回传并指导局部返修"
-  default_prompt: "用 $muse-director 协作 Muse 制作这个视频，从当前材料和阶段开始优化制作输入、审查回传并推进成片质量。"
+  short_description: "让 Muse 从主题或剧本自主统筹镜头、返修与剪辑混音，交付完整动画"
+  default_prompt: "用 $muse-director 从我的主题或剧本开始，协作 Muse 自主完成镜头选择、返修、剪辑与混音，交付可播放可下载的完整动画。"
 policy:
   allow_implicit_invocation: true
