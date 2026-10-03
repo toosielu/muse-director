@@ -63,15 +63,19 @@ python "<skill>/scripts/muse_pipeline.py" inspect --media "<media>" --output-dir
 
 FFprobe/FFmpeg 默认从当前环境寻找；有工具但未加入搜索路径时，分别用 `--ffprobe`、`--ffmpeg` 指定实际程序路径。任务ID与版本是声明，不能靠文件名沿用旧“通过”。
 
-先检查回传媒体，再将媒体和检查报告作为该轮 snapshot 的来源，这样工作包同时绑定任务 ID、媒体摘要和证据，`status` 可以发现原媒体变化。状态读取本身不写报告；有未定项或漂移返回码 2，属于需要处理的业务状态。输入错误或输出已存在返回 1。
+先检查回传媒体，再将媒体和检查报告作为该轮 snapshot 的来源，这样工作包同时绑定任务 ID、媒体摘要和证据，`status` 可以发现原媒体变化并读取失败结论。来源报告保持 `media-inspection.json` 文件名，或明确 `role: media-inspection`（`inspection`亦可），改名后也能识别；工具同时读取工作包 `inspections/` 内的报告。任意其他JSON不自动认作媒体报告。状态读取本身不写报告；有未定项、漂移、技术失败或规格FAIL/UNVERIFIED返回码2。输入错误或输出已存在返回1；consistent仍不证明语义通过。
 
 报告中的语义项仍未核验；结果解释与采用判定见 [审查覆盖](workflow.md#审查覆盖)。
 
 ## 镜头输入与指南维护
 
+`inspect` 可追加 `--target-aspect`、`--aspect-tolerance`（默认0.01）、`--min-short-side`、`--min-seconds`、`--max-seconds`、`--target-fps`、`--fps-tolerance`（默认0.01）与 `--spec-scope raw|delivery`。阈值按真实项目传入；不指定则不做规格门。`spec_gate` 独立报告PASS/FAIL/UNVERIFIED/NOT_REQUESTED；规格FAIL或UNVERIFIED使整体不通过，语义仍未核验。显示比例考虑SAR/DAR和旋转；时长门用视频流时长，缺该字段不拿更长的容器/音频代替证明。多视频流无法确定主轨时保留未核验，平均帧率不保证恒定帧率。方法见 [质量检查](quality-gates.md)。
+
 角色卡与镜头提示词按 [创作与检查](shot-design-checks.md) 填写。提交前用 `python "<skill>/scripts/lint_shot.py" --shot "<project>/shots/S01.md" --card "<project>/cards/C01.json"`，多人再追加 `--card`。已记录项目单次容量时可传 `--max-clip-seconds` 作规划检查；它不会验证平台上限。返回0表示已做文本检查，2表示输入需修，1表示格式/读取错误；真实上传与语义仍未核验。缺Python时按同样检查项由主控核对，不挡住普通创作。
 
 维护者修改共同参考/模板后执行 `python "<skill>/scripts/build_muse_guide.py"` 重建独立指南，再执行同脚本 `--check`。0为与源一致、2为过时，1为读取/构建错误。源文件清单在脚本中，不需要递归合并整个技能；生成输出不含本地相对链接，直接交给Muse即可。不要只改 `assets/muse-self-director.md` 而遗失下一次重建。
+
+同脚本加 `--compact` 生成 `assets/muse-quick-start.md`，加 `--compact --check` 检查同步；短入口来自execution-modes的同一委托段，含十条规则、填好示例与回传格式，上限3000字符。无Python时直接使用已生成文件。
 
 ## 工作包工具边界
 
