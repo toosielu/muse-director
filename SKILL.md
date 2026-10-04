@@ -1,24 +1,18 @@
 ---
 name: muse-idea-to-short
-description: 一句话成片：把一句话、简单故事或已有长提示词交给Muse，拆成30秒以上的多镜头短片并保持角色连续性。已有详细提示词按原话合并，不从头重写。单条约10秒视频或已完成逐镜提示词通常直接交Muse更合适；明确要求拆镜、统筹、续做时仍按实际范围处理。
+description: 一句话成片：把一句话、大纲、分段时间码提示词或一整段长提示词交给Muse，做成30秒以上、多镜头、角色一致的短片。只补Muse单条生成的三个短板（拼接、角色一致、说话），画面和风格交给Muse自己发挥。只要一条约10秒的视频时直接生成，不走拆镜流程。
 ---
 
 # 一句话成片
 
-先读 [主文件](muse-idea-to-short.md)。它是唯一制作规则。本文件只负责指路，不另写一套默认。用户只给想法，走入口 A。用户给了详细提示词，走入口 B。已经有用过的素材，就从当前这一步继续。
+先读[主文件](muse-idea-to-short.md)，它是唯一的规则。任何输入都先按主文件第1节整理成故事板。
 
-请求对上某一类时，写分镜之前先读对应题材包：
+请求属于下面某一类时，写故事板之前再读对应的题材包；不属于就不读：
 
-- 治愈小角色、慢节奏原创 IP：[治愈包](genres/healing-ip.md)。
-- 写实人物出镜（`meinv-chujing`）：[出镜包](genres/beauty-oncamera.md)。
-- 真人古风：[古风包](genres/guofeng-live.md)。
+- 治愈小角色、慢节奏原创IP：[治愈包](genres/healing-ip.md)
+- 写实人物出镜、口播（`meinv-chujing`）：[出镜包](genres/beauty-oncamera.md)
+- 真人古风：[古风包](genres/guofeng-live.md)
 
-对不上这三类，就只用主文件，不要硬套题材包。
+需要参考时再看示例：[一句话](examples/one-line.md)、[长提示词拆镜](examples/detailed-prompt.md)、[对话戏](examples/dialogue-scene.md)。
 
-- 一句话到整片怎么写：[入口 A](examples/one-line-to-30s.md)。已经有长提示词怎么拆：[入口 B](examples/prompt-merge.md)。
-- 治愈定妆的三条独立输入：[实测示例](examples/healing-test.md)。只有用户说是实测时才读。
-- 2026-10-03 一次 45 秒治愈成片的翻车记录：[案例](examples/case-2026-10-03-healing-45s.md)。做多镜头角色片时读，避免再跳过定妆、交方图、换景和把结尾拉远。
-
-用户不用安装脚本，也不用一次上传所有文件。只读主文件、对上的那一个题材包，以及当前用得上的示例。要在本地量视频或检查提示词，读 [后台工具说明](tools/README.md)。为什么这样取舍，见 [重构记录](tools/refactor-review.md)，那不是另一套制作规则。
-
-助手用什么接入都可以。Muse 负责生成。读了这些文件，不等于已经生成了视频。
+用户要测试 skill 效果时，用[固定测试集](testing/test-set.md)和[评分表](testing/scorecard.md)。

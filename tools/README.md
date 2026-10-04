@@ -1,59 +1,22 @@
-# 后台检查工具
+# 后台工具
 
-用户只发[主文件](../muse-idea-to-short.md)给Muse即可。本目录供助手维护，不生成视频、不调用Muse、不发送消息；文本通过和规格通过都不等于故事/动态/发音通过。
+用户只需把[主文件](../muse-idea-to-short.md)发给 Muse。本目录给维护者和助手用，不生成视频，也不调用 Muse。
 
-## U0实际文件检查
+## 量视频的画幅和时长
 
-Python标准库加已安装的官方FFmpeg/ffprobe；缺工具或字段记UNVERIFIED，不凭容器总时长、音轨或缩略图判定视频。默认720短边、0.01比例容差和scene阈值0.35都是待测预设；项目采用值优先。
-
-`--scene-threshold`可覆盖疑似硬切阈值；排除封面流后仅扫描唯一视频主流，多个视频流不擅自选择。
+需要本机装有 FFmpeg（`ffprobe`）。下载 Muse 的成片后运行：
 
 ```sh
 python tools/u0_check.py downloaded.mp4 --target-aspect 0.5625 --min-seconds 6 --max-seconds 10 --min-short-side 720
 ```
 
-画幅/视频流时长不符合采用目标FAIL；短边偏小、scene变化候选WARN“可能拼接”；没完成检测UNVERIFIED。旋转与像素/显示比例参与判断。硬切算法也会响应闪光/曝光，不证明自动拼接；连续内容/音轨另查。返回码PASS/WARN为0、FAIL为2、UNVERIFIED为3，自动化必须看JSON状态，不能把WARN当验收PASS。不改写原视频或自动重新提交。
+`0.5625` 是竖屏9:16（宽÷高），横屏16:9写 `1.7778`。输出 JSON：画幅或时长不对是 FAIL（返回码2）；短边偏小或疑似中间有硬切是 WARN（返回码0）；工具没跑成是 UNVERIFIED（返回码3）。疑似硬切也可能是闪光或场景变化，要自己看片确认。工具不会改动视频。
 
-## 输入检查格式
-
-使用一个`### 制作任务`与同级`### 模型输入（原样转交）`，管理JSON仅留在制作层。`--card`可重复或不提供；纯文字设`text_only: true`，空参考不绕过已采用卡的必要图片。
-
-人数可仅在约束行写“画面中恰好N个角色”，无需再添主体数行；若两处都有须与制作层人数一致，冲突FAIL。
-
-````markdown
-### 制作任务
-```json
-{"mode":"test","cards":[],"subject_count":0,"text_only":true,"references":[],"style_prefix":"9:16，二维插画","prompt_budget_seconds":10,"usable_window":[0,8],"required_event":"盒子移到B"}
-```
-### 模型输入（原样转交）
-风格：9:16，二维插画
-主体数：0
-场景：柜台和一个蓝盒
-0–2秒：蓝盒在A
-2–5秒：蓝盒向B移动
-5–8秒：蓝盒停在B
-镜头：固定中景
-声音：只有动作声
-约束：无文字、无字幕、无水印
-````
-
-外层示意的Markdown围栏可去掉，保存为`shot.md`，运行：
-
-```sh
-python tools/lint_shot.py --shot shot.md --max-clip-seconds 10
-```
-
-默认检查禁字三项、无音乐/对白、单种机位、管理话术、规划容量10秒（待测）。助手新增定时行里的「不要」默认FAIL；`mode: detailed`中完整定时原句（含秒段）已记录在`frozen_blocks`时，原样保留并给WARN，不要求改写用户已采用内容。未冻结的新增行仍检查；原句缺失或改变仍FAIL。明确采用允许时可设置`policies.allow_timed_negation: true`。动作节拍默认最多2个，只排除识别出的纯静态姿势和保持；首段真实动作、松手以及保持表情同时移动仍计拍。超过就失败，不能仅凭词法结果证明真实拍数。用户明确要更多拍时，在制作JSON写`policies.max_beats`。用户已采用不同要求时，还可写`allow_music/allow_dialogue`、`planning_limit_seconds`和`policies.max_camera_moves/required_literals`；默认不得覆盖用户稿。`mode: detailed`必须提供`frozen_blocks`原文对象（character/style/scene/constraint等按实际有的项），逐字存在检查不保证视觉一致。
-
-卡JSON支持`card_id/version/locked_text/style_prefix/constraint_block/reference_images/adoption_evidence`；详细模式也可将用户原话放`frozen_blocks`，不要求伪造不存在的人物。动作可为起点/动作/终点，或连续相对秒段。画面字段里的“不要/禁止”给WARN供对照，不自动删除用户禁令。定时行区分冻结原句与新增内容，见上一节。词法规则仅能发现明显冲突，不理解全部否定、动作和中文同义词。场景、动作、参考图有没有真的传上去，都要另外再看。
-
-## 维护
+## 包检查
 
 ```sh
 python -m unittest discover -s tools/tests -p "test_*.py"
 python tools/check_package.py
 ```
 
-字数按全部Unicode字符计算（含Markdown/空白），比只算中文字更保守；不生成主文件，检查失败直接改唯一主文件。实测表CSV仅有表头，实际投产时记录真实提交/文件/费用或unknown。维护取舍与失败来源见[重构记录](refactor-review.md)。
-
-治愈实测见[完整示例](../examples/healing-test.md)。台账分别保存Muse原始H1–H6、人工H1–H6、观察覆盖、预先采用的H3不适用、人数/文字/动态与跨镜衔接，新增列追加在原表头后。`muse_score_coverage`和`human_score_coverage`分别按H项写观察方式、真实时间窗与证据，旧`score_coverage`仅留综合备注；不能让某方抽帧覆盖冒充另一方连续看听。UNVERIFIED不改为不适用或从分母剔除；表头不代表有实际数据。
+`check_package.py` 检查必需文件、主文件长度、主文件的必备小节、本地链接和测试集是否齐全。它只检查文字结构，不代表视频效果。

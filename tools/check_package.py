@@ -1,77 +1,90 @@
 #!/usr/bin/env python3
-"""Check the single canonical guide, routing, lengths, names and local links."""
+"""Check required files, guide structure and length, test set and local links."""
 import json
 from pathlib import Path
 import re
 import sys
 
+REQUIRED = [
+    "README.md", "SKILL.md", "muse-idea-to-short.md", "agents/openai.yaml",
+    "genres/healing-ip.md", "genres/beauty-oncamera.md", "genres/guofeng-live.md",
+    "examples/one-line.md", "examples/detailed-prompt.md", "examples/dialogue-scene.md",
+    "examples/case-2026-10-03-healing-45s.md",
+    "testing/test-set.md", "testing/scorecard.md", "testing/results.csv",
+    "tools/u0_check.py",
+]
+GUIDE_CAP = 4000
+GENRE_CAP = 1500
+GUIDE_SECTIONS = ["0", "1", "2", "3", "4", "5", "6", "7", "8"]
+GUIDE_PHRASES = ("拼接", "一致", "说话", "故事板", "锚点", "定妆图", "画外音", "原生对白", "自主成片", "画幅", "过渡")
+# Words from the old audit-style guide that pushed Muse into bookkeeping instead of directing.
+AUDIT_JARGON = ("待测", "UNVERIFIED", "U0", "3+2", "扣费", "台账", "R9", "主控", "分母")
+TEST_IDS = [f"T{i}" for i in range(1, 9)]
+
 
 def check(root):
     root = Path(root)
-    required = ["README.md", "SKILL.md", "muse-idea-to-short.md", "agents/openai.yaml",
-                "genres/healing-ip.md", "genres/beauty-oncamera.md", "genres/guofeng-live.md",
-                "examples/one-line-to-30s.md", "examples/prompt-merge.md", "examples/healing-test.md",
-                "examples/case-2026-10-03-healing-45s.md", "tools/u0_check.py",
-                "tools/lint_shot.py", "tools/test-log.csv", "tools/refactor-review.md"]
-    errors = ["missing: " + name for name in required if not (root/name).is_file()]
+    errors = ["missing: " + name for name in REQUIRED if not (root / name).is_file()]
     lengths = {}
-    for name, cap in [("muse-idea-to-short.md",3000)] + [(p,1500) for p in required if p.startswith("genres/")]:
-        if (root/name).is_file():
-            text = (root/name).read_text(encoding="utf-8")
+
+    def read(name):
+        path = root / name
+        return path.read_text(encoding="utf-8") if path.is_file() else ""
+
+    for name in REQUIRED:
+        if name == "muse-idea-to-short.md" or name.startswith("genres/"):
+            cap = GUIDE_CAP if name == "muse-idea-to-short.md" else GENRE_CAP
+            text = read(name)
             lengths[name] = len(text)
             if len(text) > cap:
-                errors.append(f"{name}: {len(text)} > {cap} Unicode characters including Markdown/whitespace")
-    main = (root/"muse-idea-to-short.md").read_text(encoding="utf-8") if (root/"muse-idea-to-short.md").is_file() else ""
-    headings = re.findall(r"^## (\d+)\.", main,re.M)
-    if headings != [str(i) for i in range(1,11)]:
-        errors.append("canonical guide must have numbered sections 1–10")
-    for phrase in ("**A", "**B", "待测", "可复制", "3+2", "自主成片", "定妆", "待用户量", "过渡", "中景"):
-        if phrase not in main:
+                errors.append(f"{name}: {len(text)} > {cap} characters")
+
+    guide = read("muse-idea-to-short.md")
+    if re.findall(r"^## (\d+)\.", guide, re.M) != GUIDE_SECTIONS:
+        errors.append("guide must have numbered sections 0–8")
+    for phrase in GUIDE_PHRASES:
+        if phrase not in guide:
             errors.append("guide missing: " + phrase)
-    if main.count("待测") != 1:
-        errors.append("待测 must appear once in the guide, found %s" % main.count("待测"))
-    for jargon in ("R9", "主控", "分母"):
-        if jargon in main:
-            errors.append("undefined jargon in guide: " + jargon)
-    if "genres/" not in main:
-        errors.append("guide must point at genre packs")
-    for directory in ("references", "assets", "scripts"):
-        if (root/directory).exists():
-            errors.append("old parallel/generated rules remain: " + directory)
-    links = 0
-    for path in sorted(root.rglob("*")):
-        if not path.is_file() or ".git" in path.relative_to(root).parts or path.suffix not in (".md", ".yaml", ".py", ".csv"):
-            continue
-        text = path.read_text(encoding="utf-8-sig")
-        if "muse-" + "director" in text:
-            errors.append("old invocation/name remains in: " + path.relative_to(root).as_posix())
-        if path.suffix != ".md":
-            continue
-        for target in re.findall(r"\[[^\]]+\]\(([^)]+)\)", text):
-            if "://" in target or target.startswith("#"):
-                continue
-            resolved = (path.parent/target.split("#",1)[0]).resolve()
-            if not resolved.is_relative_to(root.resolve()) or not resolved.is_file():
-                errors.append("broken/escaping link: " + str(path.relative_to(root)) + " -> " + target)
-            links += 1
-    skill = (root/"SKILL.md").read_text(encoding="utf-8") if (root/"SKILL.md").is_file() else ""
-    if not re.search(r"^name: muse-idea-to-short$",skill,re.M):
+    for name in ["muse-idea-to-short.md"] + [n for n in REQUIRED if n.startswith("genres/")]:
+        for word in AUDIT_JARGON:
+            if word in read(name):
+                errors.append(f"audit jargon in {name}: {word}")
+
+    tests = read("testing/test-set.md")
+    found = re.findall(r"^### (T\d+) ", tests, re.M)
+    if found != TEST_IDS:
+        errors.append("test set must list T1–T8 in order, found " + ",".join(found))
+    if tests.count("```") != 2 * len(TEST_IDS):
+        errors.append("each test needs exactly one fenced input block")
+    header = read("testing/results.csv").splitlines()[:1]
+    if not header or not {"test_id", "group", "looks", "consistency", "cuts", "speech"}.issubset(header[0].split(",")):
+        errors.append("results.csv header missing score columns")
+
+    skill = read("SKILL.md")
+    if not re.search(r"^name: muse-idea-to-short$", skill, re.M):
         errors.append("skill name differs")
     if "muse-idea-to-short.md" not in skill:
-        errors.append("SKILL route missing canonical file")
-    readme = (root/"README.md").read_text(encoding="utf-8") if (root/"README.md").is_file() else ""
-    first_screen = readme.split("## 按需补充",1)[0]
-    for phrase in ("什么时候用","什么时候别用","怎么发","拿到片子先看"):
-        if phrase not in first_screen:
-            errors.append("README first screen missing: " + phrase)
-    review = (root/"tools/refactor-review.md").read_text(encoding="utf-8") if (root/"tools/refactor-review.md").is_file() else ""
-    for i in range(1,9):
-        if not re.search(r"\|C"+str(i)+r"[^\n]*\|[^\n]+\|[^\n]+\|",review):
-            errors.append("C"+str(i)+" resolution/reason missing")
-    return {"status":"FAIL" if errors else "PASS","lengths":lengths,"relative_links":links,"errors":errors,"muse_validation":"not run / 待测"}
+        errors.append("SKILL route missing main guide")
+    readme = read("README.md")
+    for phrase in ("什么时候用", "什么时候别用", "怎么发", "拿到片子先看", "testing/test-set.md"):
+        if phrase not in readme:
+            errors.append("README missing: " + phrase)
+
+    links = 0
+    for path in sorted(root.rglob("*.md")):
+        if ".git" in path.relative_to(root).parts:
+            continue
+        for target in re.findall(r"\[[^\]]+\]\(([^)]+)\)", path.read_text(encoding="utf-8")):
+            if "://" in target or target.startswith("#"):
+                continue
+            resolved = (path.parent / target.split("#", 1)[0]).resolve()
+            if not resolved.is_relative_to(root.resolve()) or not resolved.is_file():
+                errors.append("broken link: " + path.relative_to(root).as_posix() + " -> " + target)
+            links += 1
+    return {"status": "FAIL" if errors else "PASS", "lengths": lengths, "relative_links": links, "errors": errors}
 
 
 if __name__ == "__main__":
     report = check(Path(__file__).resolve().parent.parent)
-    print(json.dumps(report,ensure_ascii=False,indent=2))
+    print(json.dumps(report, ensure_ascii=False, indent=2))
     sys.exit(1 if report["errors"] else 0)

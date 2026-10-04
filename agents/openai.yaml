@@ -1,6 +1,6 @@
 interface:
   display_name: "一句话成片"
-  short_description: "把想法或详细提示词交给Muse，做成角色连续的多镜头短片"
-  default_prompt: "用 $muse-idea-to-short 从我的想法或详细提示词开始。默认先等我确认分镜表、每个重复角色的角色卡、以及定妆，再自动生成并交可播放的整片。只有我写明自主成片才跳过这三次等待。主角和重复配角都要定妆核对、逐镜检查。保留我的原话与秒段，没有真实参考图就说明纯文字风险。交片时写明还没核对的项，缺镜不冒称完整。"
+  short_description: "把任何写法的想法或提示词交给Muse，做成角色一致的多镜头短片"
+  default_prompt: "用 $muse-idea-to-short 把我的想法或提示词做成短片。先给我故事板和主角定妆图，我说可以之后一直做到交整片。保留我写的原话和秒段。"
 policy:
   allow_implicit_invocation: true
