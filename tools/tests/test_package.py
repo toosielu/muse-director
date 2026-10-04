@@ -93,6 +93,27 @@ class PackageTests(unittest.TestCase):
         pattern=re.escape("\n".join(prefix))+r"\n道具：[^\n]+\n动作：[^\n]+\n"+re.escape("\n".join(suffix))
         self.assertEqual(len(re.findall(pattern,script)),2)
 
+    def test_scene_followup_has_attachment_map_and_fixed_output_names(self):
+        text = read("testing/scene-continuity.md")
+        checklist, rest = text.split("## 整段复制给Muse", 1)
+        script = re.search(r"```text\n(.*?)```", rest, re.S).group(1)
+        for original, copy in (
+            ("S1总图.png", "courtyard_master.png"),
+            ("B_镜2.mp4", "b2_source.mp4"),
+            ("镜1.mp4", "shot1_source.mp4"),
+            ("卡_白衣.png", "card_white.png"),
+            ("卡_青衣.png", "card_green.png"),
+        ):
+            with self.subTest(original=original):
+                self.assertIn(f"`{original}`", checklist)
+                self.assertIn(f"`{copy}`", checklist)
+                self.assertIn(f"{original}→{copy}", script)
+        self.assertIn("b2_075.png", checklist)
+        self.assertIn("V1为v1_hop2.mp4，V2为v2_sword.mp4", script)
+        report = script.split("回传源视频", 1)[1]
+        for filename in ("v1_hop2.mp4", "v2_sword.mp4"):
+            self.assertIn(filename, report)
+
     def test_draft_topics_are_not_default_genres(self):
         for name in ("beauty-oncamera.md", "guofeng-live.md"):
             self.assertFalse((ROOT / "genres" / name).exists())
