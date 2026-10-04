@@ -1,6 +1,6 @@
 # 示例：一句话 → 剧本、分镜表和资产
 
-教学示例，还没有拿去生成。展示[主文件](../muse-idea-to-short.md)第1–4节怎么落地。
+教学示例，未实测。展示[主文件](../muse-idea-to-short.md)第1–4节怎么落地；下面的设定和预算是示范，不是效果保证。
 
 ## 用户说
 > 做一条30秒竖屏治愈动画：蓝外套小兔把迷路的萤火虫带回灯笼。
@@ -24,7 +24,9 @@
 |3|8|森林小路|小兔摘下栅栏上的灯笼举高，萤火虫跟着光飞过来|中景，侧面|无|换角度：正→侧|
 |4|7|森林小路|萤火虫飞进灯笼，灯笼亮起来；小兔抱着灯笼笑|近景|无|换景别：中→近，结尾主角看得清|
 
-同时附上全部资产：小兔的面部特写和全身照、萤火虫一张（每张图只画一个角色，纯色背景），以及“森林小路”空场景图一张（9:16）、灯笼一张。
+先列资产计划，已有合格图就复用，缺图在额度确认后补。本例准备小兔全身、萤火虫、森林小路空场景、灯笼各1张，再做4张首帧；小兔面部是否要另补，看近景能否核对，不强制所有角色各两张。
+
+把剧本、分镜表、资产设定和已有图一起交用户锁定。本例可报：图片上限10次（8张计划图＋2次备用），首次视频4条、返修2条，视频总上限6次；失败和废弃也计数。用户确认这份额度后自主做完。用户已授权自主成片并明确额度，就沿用授权，不逐镜再问。
 
 ## 第2镜怎么生成
 **先做首帧图**（以小兔定妆图为参考，比例9:16）：
@@ -34,7 +36,7 @@ A hand-drawn white bunny, two heads tall, two upright long ears, short blue jack
 Night forest path splitting into two stone trails, wooden fence on the right with a round yellow paper lantern, moonlight from the upper left.
 The bunny stands at the right edge of the frame, about to step in. Medium shot.
 ```
-确认首帧图里的小兔和定妆图一致、比例是竖屏，再**用首帧图生成视频**。画风句、锚点句、场景句都要带上：缺画风句容易变3D，缺场景句结尾容易换场景。
+自查首帧图里的小兔和参考图一致、实际比例符合目标，再**用首帧图生成视频**。带上画风句、锚点句、场景句便于对照设定；能力记录中个别镜头补这些句子有效，不能反推漏写就一定漂，也不能保证写了就不漂。
 ```
 Warm hand-drawn 2D, flat colors, soft blue-purple night with warm yellow light.
 A hand-drawn white bunny, two heads tall, two upright long ears, short blue jacket, one yellow button on the chest.
@@ -47,6 +49,6 @@ Sound: crickets and soft footsteps. Clean image without any text.
 
 ## 为什么这样拆
 - 4镜×约7.5秒=30秒，每镜都是一个完整的小动作。
-- 相邻镜头都换了景别或角度，剪起来不会跳。
-- 全程一个地点，不用过渡镜。
+- 相邻镜头考虑景别、角度和动作接续，是否跳仍要看实际片段；默认直接切。
+- 全程一个地点，本例没有另加过渡镜；不把这当成所有同地镜头都能顺接的保证。
 - 最后一镜是近景，主角和结局都看得清。

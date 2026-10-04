@@ -1,6 +1,6 @@
 interface:
   display_name: "一句话成片"
   short_description: "把任何写法的想法或提示词交给Muse，做成角色一致的多镜头短片"
-  default_prompt: "用 $muse-idea-to-short 把我的想法或提示词做成短片。先给我剧本、分镜表和全部资产，我说可以之后一直做到交整片。保留我写的原话和秒段。"
+  default_prompt: "用 $muse-idea-to-short 把我的想法或提示词做成短片。先给我剧本、分镜表、资产计划和图片/视频预算，我说可以后补图并自主做到交整片。保留我写的原话和秒段，画面默认直接切，额度用完先停。"
 policy:
   allow_implicit_invocation: true

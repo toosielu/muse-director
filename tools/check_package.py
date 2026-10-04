@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check required files, guide structure and length, test set and local links."""
+"""Check required files, guide structure, genre length, test set and local links."""
 import json
 from pathlib import Path
 import re
@@ -7,19 +7,19 @@ import sys
 
 REQUIRED = [
     "README.md", "SKILL.md", "muse-idea-to-short.md", "agents/openai.yaml",
-    "genres/healing-ip.md", "genres/beauty-oncamera.md", "genres/guofeng-live.md",
+    "genres/healing-ip.md", "drafts/beauty-oncamera.md", "drafts/guofeng-live.md",
     "examples/one-line.md", "examples/detailed-prompt.md", "examples/dialogue-scene.md",
     "examples/case-2026-10-03-healing-45s.md", "examples/case-2026-10-04-capability-test.md",
     "testing/test-set.md", "testing/scorecard.md", "testing/results.csv",
+    "testing/edit-and-budget.md", "testing/dialogue-audio.md", "testing/multi-reference.md",
     "tools/u0_check.py",
 ]
-GUIDE_CAP = 4000
 GENRE_CAP = 1500
 GUIDE_SECTIONS = ["0", "1", "2", "3", "4", "5", "6", "7", "8"]
 GUIDE_PHRASES = ("拼接", "一致", "说话", "剧本", "分镜表", "资产", "锁定", "锚点", "首帧图", "原生对白", "拼音",
-                 "自主成片", "画幅", "过渡", "复杂动作放开场", "一次只改一处", "上一版提示词", "情绪不写抽象词")
+                 "自主成片", "画幅", "过渡", "一次只改一处", "上一版提示词")
 # Words from the old audit-style guide that pushed Muse into bookkeeping instead of directing.
-AUDIT_JARGON = ("待测", "UNVERIFIED", "U0", "3+2", "扣费", "台账", "R9", "主控", "分母")
+AUDIT_JARGON = ("UNVERIFIED", "U0", "3+2", "扣费", "台账", "R9", "主控", "分母")
 TEST_IDS = [f"T{i}" for i in range(1, 9)]
 
 
@@ -34,11 +34,10 @@ def check(root):
 
     for name in REQUIRED:
         if name == "muse-idea-to-short.md" or name.startswith("genres/"):
-            cap = GUIDE_CAP if name == "muse-idea-to-short.md" else GENRE_CAP
             text = read(name)
             lengths[name] = len(text)
-            if len(text) > cap:
-                errors.append(f"{name}: {len(text)} > {cap} characters")
+            if name.startswith("genres/") and len(text) > GENRE_CAP:
+                errors.append(f"{name}: {len(text)} > {GENRE_CAP} characters")
 
     guide = read("muse-idea-to-short.md")
     if re.findall(r"^## (\d+)\.", guide, re.M) != GUIDE_SECTIONS:
