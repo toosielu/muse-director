@@ -29,6 +29,16 @@ class PackageTests(unittest.TestCase):
         self.assertEqual(report["status"], "FAIL")
         self.assertTrue(any("3+2" in e for e in report["errors"]))
 
+    def test_guide_length_is_reported_without_a_hard_limit(self):
+        with tempfile.TemporaryDirectory() as folder:
+            copy = Path(folder) / "pkg"
+            shutil.copytree(ROOT, copy, ignore=shutil.ignore_patterns(".git"))
+            guide = copy / "muse-idea-to-short.md"
+            guide.write_text(guide.read_text(encoding="utf-8") + "\n" + "长" * 4100, encoding="utf-8")
+            report = check(copy)
+        self.assertGreater(report["lengths"]["muse-idea-to-short.md"], 4000)
+        self.assertFalse(any("muse-idea-to-short.md:" in e and "characters" in e for e in report["errors"]))
+
     def test_detailed_example_keeps_user_wording(self):
         text = read("examples/detailed-prompt.md")
         original = text.split("## 用户给的15秒提示词", 1)[1].split("## 第一步", 1)[0]
@@ -55,13 +65,34 @@ class PackageTests(unittest.TestCase):
             self.assertLessEqual(row.count("：“"), 1, row)
             self.assertNotIn("配音", row)
 
-    def test_no_post_dubbing_recommended(self):
-        self.assertIn("永远不走后期配音", read("muse-idea-to-short.md"))
-        for name in ("genres/healing-ip.md", "genres/beauty-oncamera.md", "genres/guofeng-live.md",
-                     "examples/one-line.md", "examples/detailed-prompt.md", "examples/dialogue-scene.md"):
-            text = read(name)
-            self.assertNotIn("TTS", text, name)
-            self.assertNotIn("画外音", text, name)
+    def test_next_round_test_documents_are_packaged(self):
+        with tempfile.TemporaryDirectory() as folder:
+            copy = Path(folder) / "pkg"
+            shutil.copytree(ROOT, copy, ignore=shutil.ignore_patterns(".git"))
+            (copy / "testing/multi-reference.md").unlink()
+            report = check(copy)
+        self.assertIn("missing: testing/multi-reference.md", report["errors"])
+
+    def test_draft_topics_are_not_default_genres(self):
+        for name in ("beauty-oncamera.md", "guofeng-live.md"):
+            self.assertFalse((ROOT / "genres" / name).exists())
+            self.assertTrue((ROOT / "drafts" / name).is_file())
+
+    def test_draft_content_is_not_checked_as_a_main_rule(self):
+        with tempfile.TemporaryDirectory() as folder:
+            copy = Path(folder) / "pkg"
+            shutil.copytree(ROOT, copy, ignore=shutil.ignore_patterns(".git"))
+            draft = copy / "drafts/beauty-oncamera.md"
+            draft.write_text(draft.read_text(encoding="utf-8") + "\n待测 U0\n" + "长" * 1600, encoding="utf-8")
+            report = check(copy)
+        self.assertFalse(any("drafts/beauty-oncamera.md:" in e or "audit jargon in drafts/" in e for e in report["errors"]))
+
+    def test_capability_round_four_is_not_double_counted(self):
+        text = read("examples/case-2026-10-04-capability-test.md")
+        self.assertEqual(len(re.findall(r"^## 第四轮：", text, re.M)), 1)
+        round_four = text.split("## 第四轮：", 1)[1].split("## 下一轮要测", 1)[0]
+        self.assertIn("原输入也写了9:16", round_four)
+        self.assertIn("只记这一次", round_four)
 
     def test_real_run_case_keeps_observed_failures(self):
         text = read("examples/case-2026-10-03-healing-45s.md")

@@ -19,4 +19,4 @@ python -m unittest discover -s tools/tests -p "test_*.py"
 python tools/check_package.py
 ```
 
-`check_package.py` 检查必需文件、主文件长度、主文件的必备小节、本地链接和测试集是否齐全。它只检查文字结构，不代表视频效果。
+`check_package.py` 检查必需文件、主文件的必备小节、本地链接和测试集是否齐全，并报告主文件长度，不设主文件字数上限。`drafts/` 只检查文件和链接，不把草稿当成制作规则。它只检查文字结构，不代表视频效果。
