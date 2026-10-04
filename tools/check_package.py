@@ -17,6 +17,7 @@ REQUIRED = [
     "testing/ab-test-2026-10-04.md",
     "testing/audio-prompts.md", "testing/positive-phrasing.md",
     "testing/audio-positive-review-2026-10-05.md",
+    "testing/audio-simplify-review-2026-10-05.md",
     "testing/scene-continuity.md", "testing/scene-continuity-results-2026-10-05.md",
     "tools/u0_check.py",
 ]
