@@ -66,12 +66,53 @@ class PackageTests(unittest.TestCase):
             self.assertNotIn("配音", row)
 
     def test_next_round_test_documents_are_packaged(self):
-        with tempfile.TemporaryDirectory() as folder:
-            copy = Path(folder) / "pkg"
-            shutil.copytree(ROOT, copy, ignore=shutil.ignore_patterns(".git"))
-            (copy / "testing/multi-reference.md").unlink()
-            report = check(copy)
-        self.assertIn("missing: testing/multi-reference.md", report["errors"])
+        for name in ("testing/multi-reference.md", "testing/scene-continuity.md",
+                     "testing/scene-continuity-results-2026-10-05.md"):
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as folder:
+                copy = Path(folder) / "pkg"
+                shutil.copytree(ROOT, copy, ignore=shutil.ignore_patterns(".git"))
+                (copy / name).unlink()
+                report = check(copy)
+                self.assertIn("missing: " + name, report["errors"])
+
+    def test_scene_followup_keeps_fixed_prompt_and_user_audio_verbatim(self):
+        text=read("testing/scene-continuity.md")
+        script=re.search(r"```text\n(.*?)```",text,re.S).group(1)
+        prefix=[
+            "国风手绘二维动画，线条干净，平涂上色，柔和光影，横屏16:9。",
+            "白衣师姐，二十岁左右的女子，乌黑长发束成高马尾，系红色发带，穿象牙白宽袖长衣，系浅灰腰带。",
+            "青衣师弟，十五岁左右的少年，比师姐矮半个头，黑色短发在头顶束成一个小髻，穿青绿色短打衣裤，系深棕腰带。",
+            "剑，一柄细长直剑，始终插在黑色剑鞘里，剑柄缠着红绳。",
+            "竹林小院，白天柔光。镜头从院子正面拍：画面左边是白墙上的圆形月洞门，右边是一张圆石桌和两个石凳，桌上放一只青瓷茶壶，左上角屋檐下挂一盏红灯笼，背后是一排绿竹。",
+        ]
+        suffix=[
+            "镜头：全景，固定机位。",
+            "声音：竹叶沙沙声和鸟叫，没有音乐，没有人声。",
+            "约束：无文字、无字幕、无水印。画面里只有这两个人。剑始终插在鞘里，不拔剑，不打斗。",
+        ]
+        pattern=re.escape("\n".join(prefix))+r"\n道具：[^\n]+\n动作：[^\n]+\n"+re.escape("\n".join(suffix))
+        self.assertEqual(len(re.findall(pattern,script)),2)
+
+    def test_scene_followup_has_attachment_map_and_fixed_output_names(self):
+        text = read("testing/scene-continuity.md")
+        checklist, rest = text.split("## 整段复制给Muse", 1)
+        script = re.search(r"```text\n(.*?)```", rest, re.S).group(1)
+        for original, copy in (
+            ("S1总图.png", "courtyard_master.png"),
+            ("B_镜2.mp4", "b2_source.mp4"),
+            ("镜1.mp4", "shot1_source.mp4"),
+            ("卡_白衣.png", "card_white.png"),
+            ("卡_青衣.png", "card_green.png"),
+        ):
+            with self.subTest(original=original):
+                self.assertIn(f"`{original}`", checklist)
+                self.assertIn(f"`{copy}`", checklist)
+                self.assertIn(f"{original}→{copy}", script)
+        self.assertIn("b2_075.png", checklist)
+        self.assertIn("V1为v1_hop2.mp4，V2为v2_sword.mp4", script)
+        report = script.split("回传源视频", 1)[1]
+        for filename in ("v1_hop2.mp4", "v2_sword.mp4"):
+            self.assertIn(filename, report)
 
     def test_draft_topics_are_not_default_genres(self):
         for name in ("beauty-oncamera.md", "guofeng-live.md"):

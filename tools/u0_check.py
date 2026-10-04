@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Read real media specs and scene-change candidates; never generate or judge story."""
+"""Read media specs against agreed targets; never crop, generate or judge story.
+
+Aspect checks use an absolute ratio tolerance, not an orientation-only check.
+The caller supplies the user-approved target for this source or final deliverable.
+"""
 import argparse
 from fractions import Fraction
 import hashlib
@@ -64,7 +68,7 @@ def evaluate_probe(probe, target_aspect=None, min_seconds=None, max_seconds=None
             if aspect is None:
                 add("display_aspect", "UNVERIFIED", "Pixel/display aspect missing; do not assume square pixels")
             elif target_aspect is not None and abs(aspect - target_aspect) > aspect_tolerance:
-                add("aspect", "FAIL", "Display aspect outside adopted tolerance")
+                add("aspect", "FAIL", f"Display aspect {aspect:.6f} differs from target {target_aspect:.6f} by more than {aspect_tolerance}; same orientation is not a pass")
             short_side = min(width, height)
             if min_short_side is not None and short_side < min_short_side:
                 add("short_side", "WARN", "Short side below adopted warning threshold")
@@ -126,11 +130,11 @@ def inspect(path, scene_threshold=0.35, **targets):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("file",type=Path)
-    parser.add_argument("--target-aspect",type=float)
+    parser.add_argument("--target-aspect",type=float,help="User-agreed width/height ratio for this file: 16:9=1.7778, 3:2=1.5, 9:16=0.5625; never change just to force PASS")
     parser.add_argument("--min-seconds",type=float)
     parser.add_argument("--max-seconds",type=float)
     parser.add_argument("--min-short-side",type=float,default=720)
-    parser.add_argument("--aspect-tolerance",type=float,default=0.01)
+    parser.add_argument("--aspect-tolerance",type=float,default=0.01,help="Absolute ratio difference allowed (default 0.01); does not treat all landscape/portrait ratios as equivalent")
     parser.add_argument("--scene-threshold",type=float,default=0.35,help="Provisional / 待测; scene-change candidate threshold in (0,1]")
     args = vars(parser.parse_args())
     path = args.pop("file")

@@ -18,3 +18,5 @@ description: 一句话成片：用户要用Muse把一句话、大纲、剧本、
 用户问规则依据时，读[规则证据表](testing/rule-evidence.md)。用户要测试 skill 效果时，用[固定测试集](testing/test-set.md)和[评分表](testing/scorecard.md)。专项按需读：[剪辑与预算](testing/edit-and-budget.md)、[原生对白与TTS](testing/dialogue-audio.md)、[首帧多参考图](testing/multi-reference.md)。
 
 用户要测声音说明或画面肯定写法时，分别读[声音盲测](testing/audio-prompts.md)、[转头盲测](testing/positive-phrasing.md)。这些是待测方案，普通制作不自动执行、不把候选措辞加载成默认。
+
+用户要验证场景接戏、接帧或持剑时，读[场景补测](testing/scene-continuity.md)，依据见[单次记录与判断](testing/scene-continuity-results-2026-10-05.md)。接帧、保持段和尾帧仍是测试候选，普通制作不自动启用。
