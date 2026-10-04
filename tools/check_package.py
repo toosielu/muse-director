@@ -15,6 +15,8 @@ REQUIRED = [
     "testing/edit-and-budget.md", "testing/dialogue-audio.md", "testing/multi-reference.md",
     "testing/rule-evidence.md", "testing/review-v3.3.md",
     "testing/ab-test-2026-10-04.md",
+    "testing/audio-prompts.md", "testing/positive-phrasing.md",
+    "testing/audio-positive-review-2026-10-05.md",
     "tools/u0_check.py",
 ]
 GENRE_CAP = 1500
