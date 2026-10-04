@@ -38,7 +38,7 @@
 - 示例：[一句话→剧本和分镜](examples/one-line.md) / [带时间码的长提示词→拆镜](examples/detailed-prompt.md) / [两人对话戏](examples/dialogue-scene.md) / [10/03 的45秒翻车记录](examples/case-2026-10-03-healing-45s.md) / [10/04 能力问答与实测](examples/case-2026-10-04-capability-test.md)
 - **测试**：[固定测试集](testing/test-set.md)、[评分表](testing/scorecard.md)、[结果记录](testing/results.csv)。每次改 skill，都用同一批输入做“有 skill / 没 skill”对照。
 
-10/04 实测：9:16 首帧图能出 9:16 视频（V1 通过）；单主体定妆图加首帧图能锁住角色大特征（V2 基本通过），小细节和画风仍会漂。整套流程还没有完整跑过，下一步见[能力记录](examples/case-2026-10-04-capability-test.md)里的 V6、V7。
+10/04 实测：9:16 首帧图能出 9:16 视频（V1）；单主体定妆图加首帧图能跨场景锁住角色（V2）；视频提示词带画风句，后半段不再变3D（V6）；小细节写进锚点能保住（V7）。还没解决的是结尾偶尔换场景（已加场景句，待测 V9）。整套流程还没完整跑过，下一步见[能力记录](examples/case-2026-10-04-capability-test.md)。
 
 ## 给助手宿主使用
 

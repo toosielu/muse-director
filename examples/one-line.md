@@ -34,10 +34,11 @@ A hand-drawn white bunny, two heads tall, two upright long ears, short blue jack
 Night forest path splitting into two stone trails, wooden fence on the right with a round yellow paper lantern, moonlight from the upper left.
 The bunny stands at the right edge of the frame, about to step in. Medium shot.
 ```
-确认首帧图里的小兔和定妆图一致、比例是竖屏，再**用首帧图生成视频**。画风句和锚点句都要带上，只写动作时画风容易漂：
+确认首帧图里的小兔和定妆图一致、比例是竖屏，再**用首帧图生成视频**。画风句、锚点句、场景句都要带上：缺画风句容易变3D，缺场景句结尾容易换场景。
 ```
 Warm hand-drawn 2D, flat colors, soft blue-purple night with warm yellow light.
 A hand-drawn white bunny, two heads tall, two upright long ears, short blue jacket, one yellow button on the chest.
+Night forest path splitting into two stone trails, wooden fence on the right with a round yellow paper lantern, moonlight from the upper left.
 The bunny walks slowly to the fork, crouches down, and raises both ears, curiously watching a flickering firefly in front of it. Medium shot, camera gently follows.
 Sound: crickets and soft footsteps. Clean image without any text.
 （参考图：第2镜首帧图）
