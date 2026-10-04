@@ -14,6 +14,7 @@ REQUIRED = [
     "testing/test-set.md", "testing/scorecard.md", "testing/results.csv",
     "testing/edit-and-budget.md", "testing/dialogue-audio.md", "testing/multi-reference.md",
     "testing/rule-evidence.md", "testing/review-v3.3.md",
+    "testing/ab-test-2026-10-04.md",
     "tools/u0_check.py",
 ]
 GENRE_CAP = 1500
