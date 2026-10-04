@@ -28,6 +28,38 @@ class U0Tests(unittest.TestCase):
         self.probe["streams"][0]["display_aspect_ratio"]="2:3"
         self.assertEqual(self.check()["status"],"FAIL")
 
+    def test_scene_three_two_is_not_accepted_as_landscape_sixteen_nine(self):
+        self.probe["streams"][0].update(width=1152,height=768,display_aspect_ratio="3:2")
+        self.targets["target_aspect"]=16/9
+        report=self.check()
+        self.assertEqual(report["status"],"FAIL")
+        finding=next(f for f in report["findings"] if f["code"]=="aspect")
+        self.assertIn("1.500000",finding["detail"])
+        self.assertIn("1.777778",finding["detail"])
+
+    def test_explicit_three_two_target_accepts_source_but_not_sixteen_nine(self):
+        self.probe["streams"][0].update(width=1152,height=768,display_aspect_ratio="3:2")
+        self.targets["target_aspect"]=3/2
+        self.assertEqual(self.check()["status"],"PASS")
+        self.targets["target_aspect"]=16/9
+        self.assertEqual(self.check()["status"],"FAIL")
+
+    def test_near_nine_sixteen_keeps_existing_aspect_tolerance(self):
+        for width,height in ((1152,2048),(704,1248)):
+            with self.subTest(width=width,height=height):
+                self.probe["streams"][0].update(width=width,height=height)
+                self.probe["streams"][0].pop("display_aspect_ratio",None)
+                report=self.check()
+                self.assertFalse(any(f["code"]=="aspect" for f in report["findings"]))
+                self.assertEqual(report["status"],"PASS" if width>=720 else "WARN")
+
+    def test_cropped_deliverable_keeps_aspect_and_short_side_checks_separate(self):
+        self.probe["streams"][0].update(width=1152,height=648,display_aspect_ratio="16:9")
+        self.targets["target_aspect"]=16/9
+        report=self.check()
+        self.assertEqual(report["status"],"WARN")
+        self.assertEqual([f["code"] for f in report["findings"]],["short_side"])
+
     def test_stream_duration_not_container_or_audio_duration(self):
         self.probe["streams"][0]["duration"]="4"
         self.probe["format"]={"duration":"10"}
