@@ -12,6 +12,7 @@ REQUIRED = [
     "examples/case-2026-10-03-healing-45s.md", "examples/case-2026-10-04-capability-test.md",
     "testing/test-set.md", "testing/scorecard.md", "testing/results.csv",
     "testing/edit-and-budget.md", "testing/dialogue-audio.md", "testing/multi-reference.md",
+    "testing/rule-evidence.md", "testing/review-v3.3.md",
     "tools/u0_check.py",
 ]
 GENRE_CAP = 1500
