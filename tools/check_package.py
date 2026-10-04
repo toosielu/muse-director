@@ -10,7 +10,8 @@ def check(root):
     root = Path(root)
     required = ["README.md", "SKILL.md", "muse-idea-to-short.md", "agents/openai.yaml",
                 "genres/healing-ip.md", "genres/beauty-oncamera.md", "genres/guofeng-live.md",
-                "examples/one-line-to-30s.md", "examples/prompt-merge.md", "examples/healing-test.md", "tools/u0_check.py",
+                "examples/one-line-to-30s.md", "examples/prompt-merge.md", "examples/healing-test.md",
+                "examples/case-2026-10-03-healing-45s.md", "tools/u0_check.py",
                 "tools/lint_shot.py", "tools/test-log.csv", "tools/refactor-review.md"]
     errors = ["missing: " + name for name in required if not (root/name).is_file()]
     lengths = {}
@@ -24,9 +25,16 @@ def check(root):
     headings = re.findall(r"^## (\d+)\.", main,re.M)
     if headings != [str(i) for i in range(1,11)]:
         errors.append("canonical guide must have numbered sections 1–10")
-    for phrase in ("**A", "**B", "待测", "可复制", "3+2", "一镜一确认", "自主成片", "UNVERIFIED"):
+    for phrase in ("**A", "**B", "待测", "可复制", "3+2", "自主成片", "定妆", "待用户量", "过渡", "中景"):
         if phrase not in main:
             errors.append("guide missing: " + phrase)
+    if main.count("待测") != 1:
+        errors.append("待测 must appear once in the guide, found %s" % main.count("待测"))
+    for jargon in ("R9", "主控", "分母"):
+        if jargon in main:
+            errors.append("undefined jargon in guide: " + jargon)
+    if "genres/" not in main:
+        errors.append("guide must point at genre packs")
     for directory in ("references", "assets", "scripts"):
         if (root/directory).exists():
             errors.append("old parallel/generated rules remain: " + directory)

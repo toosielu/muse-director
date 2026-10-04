@@ -13,7 +13,7 @@ class ShotLintTests(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
         (self.root / "ref.png").write_bytes(b"fixture; presence only, not image validation")
-        self.card = {"card_id":"C01", "version":"v1", "locked_text":"圆脑袋，蓝外套", "style_prefix":"9:16，二维插画", "adoption_evidence":"虚构测试：主控依据全片委托选用", "reference_images":[{"source":"ref.png", "required":True}]}
+        self.card = {"card_id":"C01", "version":"v1", "locked_text":"圆脑袋，蓝外套", "style_prefix":"9:16，二维插画", "adoption_evidence":"虚构测试：用户把这一镜交给制作方", "reference_images":[{"source":"ref.png", "required":True}]}
         self.meta = {"cards":[{"card_id":"C01", "version":"v1"}], "subject_count":1, "references":[{"order":1, "source":"ref.png"}], "prompt_budget_seconds":10, "usable_window":[1,7], "required_event":"把盒子推到B位"}
         self.body = "[图1：身份]\n风格：9:16，二维插画\n人物：圆脑袋，蓝外套\n主体数：1。\n场景：柜台\n起点：手贴盒子\n动作：向右推\n终点：盒子停在B\n镜头：固定中景\n声音：只有动作声\n约束：无文字、无字幕、无水印\n"
 
@@ -141,6 +141,28 @@ class ShotLintTests(unittest.TestCase):
         shot.write_text("### 制作任务\n```json\n" + json.dumps(self.meta) + "\n```\n### 模型输入（原样转交）\n" + body, encoding="utf-8")
         self.assertEqual(lint(shot, [])["status"], "text_checked")
 
+    def test_timed_negation_fails_without_removing_the_line(self):
+        self.body = self.body.replace(
+            "起点：手贴盒子\n动作：向右推\n终点：盒子停在B",
+            "0–2秒：手贴盒子\n2–5秒：不要转头，向右推\n5–8秒：松手停在B",
+        )
+        report = self.check()
+        self.assertEqual(report["status"], "needs_fix")
+        self.assertTrue(any(row["code"] == "timed_negation" and row["status"] == "FAIL" for row in report["findings"]))
+        self.assertIn("不要转头", report["model_input"])
+
+    def test_more_than_two_beats_fails_and_two_beats_pass(self):
+        self.body = self.body.replace(
+            "起点：手贴盒子\n动作：向右推\n终点：盒子停在B",
+            "0–2秒：手贴盒子\n2–4秒：向右推\n4–6秒：转身\n6–8秒：挥手\n8–10秒：保持不动",
+        )
+        self.assertTrue(any(row["code"] == "beat_limit" for row in self.check()["findings"]))
+        self.body = self.body.replace("4–6秒：转身\n6–8秒：挥手\n", "4–8秒：停下\n")
+        self.assertEqual(self.check()["status"], "text_checked")
+        self.meta["policies"] = {"max_beats": 4}
+        self.body = self.body.replace("4–8秒：停下", "4–6秒：转身\n6–8秒：挥手")
+        self.assertEqual(self.check()["status"], "text_checked")
+
     def test_guide_heading_level_does_not_leak_management_section(self):
         self.check()
         shot = self.root / "shot.md"
@@ -149,6 +171,55 @@ class ShotLintTests(unittest.TestCase):
         self.assertEqual(result["status"], "text_checked")
         self.assertNotIn("额外管理要求", result["model_input"])
         self.assertNotIn("#### 回传", result["model_input"])
+
+    def timed_body(self, lines):
+        self.body = self.body.replace(
+            "起点：手贴盒子\n动作：向右推\n终点：盒子停在B", lines
+        )
+
+    def test_first_timed_segment_with_action_counts(self):
+        self.timed_body("0–2秒：举起盒子\n2–5秒：转身\n5–8秒：挥手\n8–10秒：保持不动")
+        self.assertTrue(any(row["code"] == "beat_limit" and row["status"] == "FAIL"
+                            for row in self.check()["findings"]))
+
+    def test_hold_word_does_not_hide_motion(self):
+        self.timed_body("0–2秒：手贴盒子\n2–4秒：举起盒子\n4–6秒：转身\n6–8秒：保持微笑并走向门口\n8–10秒：保持不动")
+        self.assertTrue(any(row["code"] == "beat_limit" for row in self.check()["findings"]))
+
+    def test_release_is_a_real_action(self):
+        self.timed_body("0–2秒：手贴盒子\n2–4秒：举起盒子\n4–6秒：转身\n6–8秒：松手\n8–10秒：保持不动")
+        self.assertTrue(any(row["code"] == "beat_limit" for row in self.check()["findings"]))
+
+    def test_adopted_timed_negation_is_preserved_with_warning(self):
+        original = "2–5秒：不要转头，向右推"
+        self.meta.update(mode="detailed", frozen_blocks={"action": original})
+        self.timed_body("0–2秒：手贴盒子\n" + original + "\n5–8秒：停在B")
+        report = self.check()
+        self.assertEqual(report["status"], "text_checked")
+        self.assertIn(original, report["model_input"])
+        self.assertTrue(any(row["code"] == "timed_negation" and row["status"] == "WARN"
+                            for row in report["findings"]))
+        self.body = self.body.replace(original, "2–5秒：向右推")
+        self.assertTrue(any(row["code"] == "original_blocks" and row["status"] == "FAIL"
+                            for row in self.check()["findings"]))
+
+    def test_detailed_mode_does_not_exempt_new_negation(self):
+        self.meta.update(mode="detailed", frozen_blocks={"character": "圆脑袋，蓝外套"})
+        self.timed_body("0–2秒：手贴盒子\n2–5秒：不要转头，向右推\n5–8秒：停在B")
+        self.assertTrue(any(row["code"] == "timed_negation" and row["status"] == "FAIL"
+                            for row in self.check()["findings"]))
+
+    def test_frozen_negation_does_not_exempt_added_line(self):
+        original = "2–5秒：不要转头，向右推"
+        self.meta.update(mode="detailed", frozen_blocks={"action": original})
+        self.timed_body("0–2秒：手贴盒子\n" + original + "\n5–8秒：不要挥手，停在B")
+        self.assertTrue(any(row["code"] == "timed_negation" and row["status"] == "FAIL"
+                            for row in self.check()["findings"]))
+
+    def test_timed_negation_policy_can_be_explicitly_overridden(self):
+        self.meta["policies"] = {"allow_timed_negation": True}
+        self.timed_body("0–2秒：手贴盒子\n2–5秒：不要转头，向右推\n5–8秒：停在B")
+        self.assertEqual(self.check()["status"], "text_checked")
 
 
 if __name__ == "__main__":

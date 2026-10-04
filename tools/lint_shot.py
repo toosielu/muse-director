@@ -9,6 +9,43 @@ import sys
 INPUT_HEADING = "### 模型输入（原样转交）"
 
 
+BEAT_SPLIT = re.compile(r"然后|接着|随后|，再|并且|；|;")
+ACTION_HINT = re.compile(r"升起|举起|落地|转向|转身|挥手|移动|走|跑|推|松手|回到|退回|抖|眨|起伏|并|然后|接着|随后")
+POSE_CLAUSE = re.compile(
+    r"(?:.*?(?:自然)?保持(?:不动|静止|终点姿态|.+姿势|坐姿|站姿|.+状态)"
+    r"|静止|不动|停下"
+    r"|.*?(?:位于|停在|坐在|站在|放在|贴着|贴|在).+"
+    r"|.*?(?:双眼睁开|两耳下垂))"
+)
+TIMED_LINE = re.compile(r"^(\d+(?:\.\d+)?)\s*[-–—~～]\s*(\d+(?:\.\d+)?)\s*秒[：:]\s*(\S.*?)$", re.M)
+
+
+def action_beats(text):
+    return len([part for part in BEAT_SPLIT.split(text) if part.strip()])
+
+
+def pose_only(text):
+    """Recognize simple static clauses, never exempt a line by its position."""
+    clauses = [part.strip().rstrip("。.") for part in re.split(r"[，,]", text) if part.strip()]
+    return bool(clauses) and not ACTION_HINT.search(text) and all(
+        POSE_CLAUSE.fullmatch(clause) for clause in clauses
+    )
+
+
+def shot_beat_count(body):
+    """Count story beats. Start pose, end pose and hold are not extra beats."""
+    segments = TIMED_LINE.findall(body)
+    if segments:
+        total = 0
+        for _, _, action in segments:
+            beats = action_beats(action)
+            scaffolding = beats <= 1 and pose_only(action)
+            if not scaffolding:
+                total += beats
+        return total
+    return sum(action_beats(item) for item in re.findall(r"^动作：[ \t]*(.*)$", body, re.M))
+
+
 def positive_occurrence(text, pattern):
     """Conservative text heuristic; not a semantic prohibition classifier."""
     for clause in re.split(r"[，,。.;；\n]", text):
@@ -175,6 +212,24 @@ def lint(shot_path, card_paths, max_clip_seconds=None):
             raise ValueError(key + " must be a boolean")
         if setting is False and positive_occurrence(sound, pattern):
             add("sound_policy", "FAIL", key + " contradicts sound input")
+    max_beats = policies.get("max_beats", 2)
+    if max_beats is not None:
+        if type(max_beats) is not int or max_beats < 0:
+            raise ValueError("max_beats must be a nonnegative integer")
+        if shot_beat_count(body) > max_beats:
+            add("beat_limit", "FAIL", "Action beats exceed the adopted per-shot limit")
+    allow_timed_negation = policies.get("allow_timed_negation", False)
+    if type(allow_timed_negation) is not bool:
+        raise ValueError("allow_timed_negation must be a boolean")
+    frozen_segments = {
+        segment for original in frozen.values() for segment in TIMED_LINE.findall(original)
+    } if mode == "detailed" else set()
+    negated_segments = [segment for segment in TIMED_LINE.findall(body) if "不要" in segment[2]]
+    if not allow_timed_negation:
+        if any(segment not in frozen_segments for segment in negated_segments):
+            add("timed_negation", "FAIL", "Rewrite newly added 不要 inside timed lines; do not change adopted user text without approval")
+        if any(segment in frozen_segments for segment in negated_segments):
+            add("timed_negation", "WARN", "Preserve the exact adopted timed line; its generation effectiveness needs manual review")
     camera_limit = policies.get("max_camera_moves", 1)
     if camera_limit is not None:
         if type(camera_limit) is not int or camera_limit < 0:
