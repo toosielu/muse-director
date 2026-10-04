@@ -10,6 +10,7 @@ REQUIRED = [
     "genres/healing-ip.md", "drafts/beauty-oncamera.md", "drafts/guofeng-live.md",
     "examples/one-line.md", "examples/detailed-prompt.md", "examples/dialogue-scene.md",
     "examples/case-2026-10-03-healing-45s.md", "examples/case-2026-10-04-capability-test.md",
+    "examples/case-2026-10-04-xianxia-20s.md",
     "testing/test-set.md", "testing/scorecard.md", "testing/results.csv",
     "testing/edit-and-budget.md", "testing/dialogue-audio.md", "testing/multi-reference.md",
     "testing/rule-evidence.md", "testing/review-v3.3.md",
@@ -21,7 +22,7 @@ GUIDE_PHRASES = ("拼接", "一致", "说话", "剧本", "分镜表", "资产", 
                  "自主成片", "画幅", "过渡", "一次只改一处", "上一版提示词")
 # Words from the old audit-style guide that pushed Muse into bookkeeping instead of directing.
 AUDIT_JARGON = ("UNVERIFIED", "U0", "3+2", "扣费", "台账", "R9", "主控", "分母")
-TEST_IDS = [f"T{i}" for i in range(1, 9)]
+TEST_IDS = [f"T{i}" for i in range(1, 12)]
 
 
 def check(root):
@@ -54,7 +55,7 @@ def check(root):
     tests = read("testing/test-set.md")
     found = re.findall(r"^### (T\d+) ", tests, re.M)
     if found != TEST_IDS:
-        errors.append("test set must list T1–T8 in order, found " + ",".join(found))
+        errors.append("test set must list T1–T11 in order, found " + ",".join(found))
     if tests.count("```") != 2 * len(TEST_IDS):
         errors.append("each test needs exactly one fenced input block")
     header = read("testing/results.csv").splitlines()[:1]
