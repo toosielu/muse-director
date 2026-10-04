@@ -1,3 +1,3 @@
 date,test_id,group,skill_version,looks,story,consistency,cuts,speech,format,effort,video_count,biggest_issue,file_link,image_count,total_generations,confirmation_count,evaluation_source,review_status
-2026-10-04,moonlight-45s,N,,,,,,-,,,6,Muse自述第1和3镜长小嘴待看片核实,https://muse.ai/thread/acad7381-dd18-4f16-a860-d6004f2e83a7,6,12,1,会话及生成活动记录；确认次数为Muse自述；未填Muse10分自评分,待匿名完整看片及人工1-5分评审
-2026-10-04,moonlight-45s,S,v3.2,,,,,-,,,7,Muse报告全程无嘴与小微笑线冲突待看片核实,https://muse.ai/thread/acad7381-dd18-4f16-a860-d6004f2e83a7,13,20,1,会话及生成活动记录；确认次数为Muse自述且锁定包可以已见；未填Muse10分自评分,待匿名完整看片及人工1-5分评审
+2026-10-04,moonlight-45s,N,,,,,,-,,,6,1.0和21.5秒张口；末镜封蜡与月相变化,https://muse.ai/thread/acad7381-dd18-4f16-a860-d6004f2e83a7,6,12,1,会话及生成活动记录；附件测量与全程抽帧；用户10分抽帧反馈另存；确认次数为Muse自述,文件信息已核实；抽帧发现嘴部违背；未完整播放或听音；1-5分待评
+2026-10-04,moonlight-45s,S,v3.2,,,,,-,,,7,1.0和36.750秒张口；20.5秒嘴线；不满足全程无嘴,https://muse.ai/thread/acad7381-dd18-4f16-a860-d6004f2e83a7,13,20,1,会话及生成活动记录；附件测量与全程抽帧；用户10分抽帧反馈另存；锁定包可以已见,文件信息已核实；抽帧发现嘴部违背；未完整播放或听音；1-5分待评
