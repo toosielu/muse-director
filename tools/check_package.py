@@ -9,7 +9,7 @@ REQUIRED = [
     "README.md", "SKILL.md", "muse-idea-to-short.md", "agents/openai.yaml",
     "genres/healing-ip.md", "genres/beauty-oncamera.md", "genres/guofeng-live.md",
     "examples/one-line.md", "examples/detailed-prompt.md", "examples/dialogue-scene.md",
-    "examples/case-2026-10-03-healing-45s.md",
+    "examples/case-2026-10-03-healing-45s.md", "examples/case-2026-10-04-capability-test.md",
     "testing/test-set.md", "testing/scorecard.md", "testing/results.csv",
     "tools/u0_check.py",
 ]
