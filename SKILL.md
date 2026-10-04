@@ -16,3 +16,5 @@ description: 一句话成片：用户要用Muse把一句话、大纲、剧本、
 需要参考时再看示例：[一句话](examples/one-line.md)、[长提示词拆镜](examples/detailed-prompt.md)、[对话戏](examples/dialogue-scene.md)。
 
 用户问规则依据时，读[规则证据表](testing/rule-evidence.md)。用户要测试 skill 效果时，用[固定测试集](testing/test-set.md)和[评分表](testing/scorecard.md)。专项按需读：[剪辑与预算](testing/edit-and-budget.md)、[原生对白与TTS](testing/dialogue-audio.md)、[首帧多参考图](testing/multi-reference.md)。
+
+用户要测声音说明或画面肯定写法时，分别读[声音盲测](testing/audio-prompts.md)、[转头盲测](testing/positive-phrasing.md)。这些是待测方案，普通制作不自动执行、不把候选措辞加载成默认。
