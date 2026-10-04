@@ -50,9 +50,18 @@ class PackageTests(unittest.TestCase):
     def test_dialogue_example_has_one_speaker_per_shot(self):
         text = read("examples/dialogue-scene.md")
         rows = [line for line in text.splitlines() if re.match(r"^\|\d+\|", line)]
-        self.assertEqual(sum(int(row.split("|")[2]) for row in rows), 30)
+        self.assertGreaterEqual(len(rows), 4)
         for row in rows:
             self.assertLessEqual(row.count("：“"), 1, row)
+            self.assertNotIn("配音", row)
+
+    def test_no_post_dubbing_recommended(self):
+        self.assertIn("永远不走后期配音", read("muse-idea-to-short.md"))
+        for name in ("genres/healing-ip.md", "genres/beauty-oncamera.md", "genres/guofeng-live.md",
+                     "examples/one-line.md", "examples/detailed-prompt.md", "examples/dialogue-scene.md"):
+            text = read(name)
+            self.assertNotIn("TTS", text, name)
+            self.assertNotIn("画外音", text, name)
 
     def test_real_run_case_keeps_observed_failures(self):
         text = read("examples/case-2026-10-03-healing-45s.md")

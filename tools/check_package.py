@@ -16,7 +16,8 @@ REQUIRED = [
 GUIDE_CAP = 4000
 GENRE_CAP = 1500
 GUIDE_SECTIONS = ["0", "1", "2", "3", "4", "5", "6", "7", "8"]
-GUIDE_PHRASES = ("拼接", "一致", "说话", "故事板", "锚点", "定妆图", "画外音", "原生对白", "自主成片", "画幅", "过渡")
+GUIDE_PHRASES = ("拼接", "一致", "说话", "剧本", "分镜表", "资产", "锁定", "锚点", "首帧图", "原生对白", "拼音",
+                 "自主成片", "画幅", "过渡", "复杂动作放开场", "一次只改一处", "上一版提示词", "情绪不写抽象词")
 # Words from the old audit-style guide that pushed Muse into bookkeeping instead of directing.
 AUDIT_JARGON = ("待测", "UNVERIFIED", "U0", "3+2", "扣费", "台账", "R9", "主控", "分母")
 TEST_IDS = [f"T{i}" for i in range(1, 9)]
