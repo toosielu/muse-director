@@ -19,14 +19,15 @@
 - **只补三个短板**：长片拆镜与拼接、角色一致（锚点句加定妆图）、说话（原生对白、画外音、无对白三选一）。
 - **任何输入先整理成同一张故事板**，所以提示词怎么写都可以，后面的流程都一样。
 - **只确认一次**：故事板加定妆图。
+- **定妆图 → 每镜首帧图 → 视频**（v3.1）：10/04 实测发现参考图会被当成首帧，输出比例也跟着参考图走，所以每镜先做一张比例正确、人物正确的首帧图。
 
 ## 文件
 - [主文件](muse-idea-to-short.md)：唯一的规则，发给 Muse 的就是它。
 - 题材包（按需）：[治愈小角色](genres/healing-ip.md) / [写实人物出镜 · meinv-chujing](genres/beauty-oncamera.md) / [真人古风](genres/guofeng-live.md)
-- 示例：[一句话→故事板](examples/one-line.md) / [带时间码的长提示词→拆镜](examples/detailed-prompt.md) / [两人对话戏](examples/dialogue-scene.md) / [10/03 的45秒翻车记录](examples/case-2026-10-03-healing-45s.md)
+- 示例：[一句话→故事板](examples/one-line.md) / [带时间码的长提示词→拆镜](examples/detailed-prompt.md) / [两人对话戏](examples/dialogue-scene.md) / [10/03 的45秒翻车记录](examples/case-2026-10-03-healing-45s.md) / [10/04 能力问答与实测](examples/case-2026-10-04-capability-test.md)
 - **测试**：[固定测试集](testing/test-set.md)、[评分表](testing/scorecard.md)、[结果记录](testing/results.csv)。每次改 skill，都用同一批输入做“有 skill / 没 skill”对照。
 
-v3 还没有用 Muse 实际测过，效果要靠测试集来验证。
+v3.1 根据 10/04 的三条演示做了修正，整套流程还没有完整跑过；下一步先测能力记录里的 V1、V2（首帧图能不能控制画幅和锁人）。
 
 ## 给助手宿主使用
 

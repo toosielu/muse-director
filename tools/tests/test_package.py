@@ -40,10 +40,12 @@ class PackageTests(unittest.TestCase):
 
     def test_one_line_example_prompt_starts_with_anchors(self):
         text = read("examples/one-line.md")
-        anchor = re.search(r"小兔：(.*)", text).group(1).strip()
-        prompt = text.split("## 第2镜的提示词长什么样", 1)[1]
-        self.assertIn(anchor, prompt)
-        self.assertIn("9:16", prompt)
+        anchor = re.search(r"（英文固定版）(.*)", text).group(1).strip()
+        section = text.split("## 第2镜怎么生成", 1)[1].split("## 为什么这样拆", 1)[0]
+        first_frame, video = re.findall(r"```\n(.*?)```", section, re.S)
+        self.assertIn("9:16", first_frame)
+        for prompt in (first_frame, video):
+            self.assertIn(anchor, prompt)
 
     def test_dialogue_example_has_one_speaker_per_shot(self):
         text = read("examples/dialogue-scene.md")
