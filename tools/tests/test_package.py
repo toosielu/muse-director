@@ -67,7 +67,8 @@ class PackageTests(unittest.TestCase):
 
     def test_next_round_test_documents_are_packaged(self):
         for name in ("testing/multi-reference.md", "testing/scene-continuity.md",
-                     "testing/scene-continuity-results-2026-10-05.md"):
+                     "testing/scene-continuity-results-2026-10-05.md",
+                     "testing/audio-simplify-review-2026-10-05.md"):
             with self.subTest(name=name), tempfile.TemporaryDirectory() as folder:
                 copy = Path(folder) / "pkg"
                 shutil.copytree(ROOT, copy, ignore=shutil.ignore_patterns(".git"))
@@ -113,6 +114,24 @@ class PackageTests(unittest.TestCase):
         report = script.split("回传源视频", 1)[1]
         for filename in ("v1_hop2.mp4", "v2_sword.mp4"):
             self.assertIn(filename, report)
+
+    def test_audio_followup_changes_only_one_exclusion_sentence(self):
+        text = read("testing/audio-prompts.md")
+        prompts = re.search(r"A1、A2逐字提交：\n(.*?)\n\nB1、B2逐字提交：\n(.*?)\n\n", text, re.S)
+        self.assertIsNotNone(prompts)
+        a, b = prompts.groups()
+        self.assertEqual(b, a + "没有环境声和音效。")
+        self.assertEqual(a.split("声音：", 1)[1], "轻柔的钢琴独奏，节奏慢，音量小。")
+        self.assertIn("约10秒，9:16", a)
+
+    def test_audio_followup_keeps_budget_and_anonymous_deliverables(self):
+        text = read("testing/audio-prompts.md")
+        script = re.search(r"```text\n(.*?)```", text, re.S).group(1)
+        self.assertIn("A、B各2次，共最多4次视频，0次图片、0次独立音频生成、0次返修", script)
+        self.assertIn("纯文字生成，不用参考图", script)
+        self.assertEqual(set(re.findall(r"audio_\d+\.mp4", script)),
+                         {f"audio_{i:02}.mp4" for i in range(1, 5)})
+        self.assertIn("失败编号留空", script)
 
     def test_draft_topics_are_not_default_genres(self):
         for name in ("beauty-oncamera.md", "guofeng-live.md"):

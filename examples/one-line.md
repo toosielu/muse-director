@@ -14,7 +14,7 @@
   萤火虫：拇指大小的卡通萤火虫，圆身体，尾部发暖黄光，一对透明小翅膀
 场景锚点：
   森林小路：夜晚，石板小路分成两条岔路，右侧木栅栏，栅栏上挂一盏圆形黄纸灯笼，月光从左上方照下
-说话方式：无对白，轻柔钢琴加虫鸣，后期加
+声音说明：无对白，轻柔、慢速、低音量钢琴独奏，没有环境声和音效
 ```
 
 |镜号|取用秒数|地点|画面一句话|景别|台词|和上一镜怎么接|
@@ -42,7 +42,7 @@ Warm hand-drawn 2D, flat colors, soft blue-purple night with warm yellow light.
 A hand-drawn white bunny, two heads tall, two upright long ears, short blue jacket, one yellow button on the chest.
 Night forest path splitting into two stone trails, wooden fence on the right with a round yellow paper lantern, moonlight from the upper left.
 The bunny walks slowly to the fork, crouches down, and raises both ears, curiously watching a flickering firefly in front of it. Medium shot, camera gently follows.
-Sound: crickets and soft footsteps. Clean image without any text.
+Sound: Soft solo piano, slow tempo, low volume. No dialogue. No ambient sounds or sound effects. Clean image without any text.
 （参考图：第2镜首帧图）
 ```
 锚点句放在最前面，和图里的样子一致；其余部分由 Muse 用自己擅长的方式写。
